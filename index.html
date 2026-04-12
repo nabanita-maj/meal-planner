@@ -58,17 +58,28 @@ section.active { display: block; }
 .meal-cell .clear-btn:hover { color: #e53935; }
 .meal-cell.empty { color: #bbb; font-style: italic; display: flex; align-items: center; justify-content: center; }
 
-/* ── RECIPE BANK ── */
+/* ── RECIPE CARDS ── */
 .recipe-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
 .recipe-filters select, .recipe-filters input { padding: 7px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: .85rem; }
 .recipe-filters input { flex: 1; min-width: 180px; }
 .recipe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
-.recipe-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; transition: .2s; }
+.recipe-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; transition: .2s; position: relative; }
 .recipe-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); transform: translateY(-2px); }
-.recipe-card h3 { font-size: .95rem; color: var(--primary-dark); margin-bottom: 4px; }
+.recipe-card h3 { font-size: .95rem; color: var(--primary-dark); margin-bottom: 4px; padding-right: 24px; }
 .recipe-card .meta { font-size: .75rem; color: var(--text-light); margin-bottom: 6px; }
 .recipe-card .ingredients { font-size: .78rem; color: #555; }
+.recipe-card .delete-recipe { position: absolute; top: 10px; right: 10px; background: none; border: none; color: #ccc; cursor: pointer; font-size: 1rem; line-height: 1; padding: 2px; }
+.recipe-card .delete-recipe:hover { color: #e53935; }
 .recipe-tag { display: inline-block; background: #fff3e0; color: var(--primary); padding: 2px 8px; border-radius: 10px; font-size: .7rem; margin: 2px 2px 0 0; font-weight: 500; }
+.recipe-card.custom-recipe { border-left: 3px solid var(--accent); }
+
+/* ── ADD RECIPE FORM ── */
+.add-recipe-form { display: grid; gap: 10px; }
+.add-recipe-form label { font-size: .85rem; font-weight: 600; color: var(--text); }
+.add-recipe-form input, .add-recipe-form select, .add-recipe-form textarea { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: .85rem; font-family: inherit; }
+.add-recipe-form textarea { resize: vertical; min-height: 60px; }
+.checkbox-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.checkbox-row label { font-weight: 400; font-size: .82rem; display: flex; align-items: center; gap: 4px; }
 
 /* ── GROCERY ── */
 .grocery-list { columns: 2; column-gap: 24px; }
@@ -305,6 +316,7 @@ section.active { display: block; }
           </optgroup>
         </select>
         <input type="text" id="filterSearch" placeholder="Search recipes..." oninput="renderRecipes()">
+        <button class="btn-primary" onclick="openAddRecipeModal()" style="white-space:nowrap;">+ Add Recipe</button>
       </div>
       <div class="recipe-grid" id="recipeGrid"></div>
     </div>
@@ -430,11 +442,64 @@ section.active { display: block; }
   </div>
 </div>
 
+<!-- ════════ ADD RECIPE MODAL ════════ -->
+<div class="modal-overlay" id="addRecipeModal">
+  <div class="modal" style="max-width:550px;">
+    <h2>➕ Add New Recipe</h2>
+    <div class="add-recipe-form">
+      <div>
+        <label>Recipe Name *</label>
+        <input type="text" id="newRecipeName" placeholder="e.g. Tofu Scramble">
+      </div>
+      <div>
+        <label>Cuisine / Region *</label>
+        <input type="text" id="newRecipeRegion" placeholder="e.g. Thai, North Indian, Fusion" list="regionSuggestions">
+        <datalist id="regionSuggestions">
+          <option value="North Indian"><option value="South Indian"><option value="Bengali"><option value="Gujarati">
+          <option value="Maharashtrian"><option value="Rajasthani"><option value="Pan-Indian">
+          <option value="Mexican"><option value="Thai"><option value="Italian"><option value="Chinese">
+          <option value="Japanese"><option value="Korean"><option value="Middle Eastern"><option value="Mediterranean">
+          <option value="Fusion"><option value="American"><option value="French"><option value="Vietnamese">
+        </datalist>
+      </div>
+      <div>
+        <label>Meal Slots *</label>
+        <div class="checkbox-row">
+          <label><input type="checkbox" id="newMealBreakfast" value="breakfast"> Breakfast</label>
+          <label><input type="checkbox" id="newMealLunch" value="lunch"> Lunch</label>
+          <label><input type="checkbox" id="newMealSnack" value="snack"> Snack</label>
+          <label><input type="checkbox" id="newMealDinner" value="dinner" checked> Dinner</label>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div><label>Prep Time (min)</label><input type="number" id="newRecipePrep" value="10" min="0"></div>
+        <div><label>Cook Time (min)</label><input type="number" id="newRecipeCook" value="20" min="0"></div>
+      </div>
+      <div>
+        <label>Ingredients (comma-separated) *</label>
+        <textarea id="newRecipeIngredients" placeholder="onion, tomato, garlic, cumin, rice..."></textarea>
+      </div>
+      <div>
+        <label>Tags (comma-separated)</label>
+        <input type="text" id="newRecipeTags" placeholder="quick, comfort, protein...">
+      </div>
+      <div>
+        <label>Prep-Ahead Tips (comma-separated)</label>
+        <textarea id="newRecipePrepAhead" placeholder="Soak dal overnight, Chop vegetables..."></textarea>
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn-primary" onclick="saveNewRecipe()">💾 Save Recipe</button>
+      <button class="btn-secondary" onclick="closeAddRecipeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ═══════════════════════════════════════════════════════
-   RECIPE DATA — 65 Indian Vegetarian Recipes
+   RECIPE DATA — Built-in + Custom recipes
    ═══════════════════════════════════════════════════════ */
-const RECIPES = [
+let RECIPES = [
   // ── BREAKFAST (17) ──  [prep = minutes before cooking, cook = active cooking]
   { name:"Poha", meal:["breakfast"], region:"Maharashtrian", prep:5, cook:10, ingredients:["flattened rice","onion","peanuts","mustard seeds","curry leaves","turmeric","green chili","lemon"], tags:["quick","light"], prepAhead:["Chop onions & green chili"] },
   { name:"Upma", meal:["breakfast"], region:"South Indian", prep:5, cook:12, ingredients:["semolina","onion","mustard seeds","curry leaves","green chili","cashews","ghee"], tags:["quick"], prepAhead:["Dry-roast semolina","Chop onions"] },
@@ -572,6 +637,9 @@ const RECIPES = [
   { name:"Baba Ganoush & Bread", meal:["snack"], region:"Middle Eastern", prep:10, cook:20, ingredients:["eggplant","tahini","garlic","lemon","olive oil","cumin","parsley","pita bread"], tags:["smoky","dip"], prepAhead:["Roast eggplant (can do day before)","Blend dip (stores well)"] },
 ];
 
+// Track built-in recipe names so we know which are deletable
+const BUILTIN_RECIPE_NAMES = new Set(RECIPES.map(r => r.name));
+
 /* ═══════════════════════════════════════════════════════
    CONSTANTS & STATE
    ═══════════════════════════════════════════════════════ */
@@ -583,9 +651,41 @@ let currentWeekStart = getMonday(new Date());
 let mealPlan = {};  // { "2026-04-13": { breakfast:"Poha", lunch:"…" } }
 
 /* ═══════════════════════════════════════════════════════
+   CUSTOM RECIPES — persistence
+   ═══════════════════════════════════════════════════════ */
+let deletedBuiltins = []; // names of built-in recipes user has hidden
+
+function loadCustomRecipes() {
+  try {
+    const saved = localStorage.getItem("familyCustomRecipes");
+    if (saved) {
+      const custom = JSON.parse(saved);
+      // Add custom recipes that aren't already in the array
+      custom.forEach(r => {
+        r._custom = true;
+        if (!RECIPES.find(x => x.name === r.name)) RECIPES.push(r);
+      });
+    }
+    const del = localStorage.getItem("familyDeletedRecipes");
+    if (del) deletedBuiltins = JSON.parse(del);
+    // Remove deleted built-ins from the working array
+    RECIPES = RECIPES.filter(r => !deletedBuiltins.includes(r.name));
+  } catch(e) {}
+}
+
+function saveCustomRecipes() {
+  try {
+    const custom = RECIPES.filter(r => r._custom);
+    localStorage.setItem("familyCustomRecipes", JSON.stringify(custom));
+    localStorage.setItem("familyDeletedRecipes", JSON.stringify(deletedBuiltins));
+  } catch(e) {}
+}
+
+/* ═══════════════════════════════════════════════════════
    INIT
    ═══════════════════════════════════════════════════════ */
 window.addEventListener("DOMContentLoaded", () => {
+  loadCustomRecipes();
   loadFromLocalStorage();
   loadPantry();
   loadVotes();
@@ -792,14 +892,20 @@ function renderRecipes() {
     return true;
   });
 
-  document.getElementById("recipeGrid").innerHTML = filtered.map(r => `
-    <div class="recipe-card">
-      <h3>${r.name}</h3>
+  document.getElementById("recipeGrid").innerHTML = filtered.map((r, idx) => {
+    const isCustom = r._custom;
+    const canDelete = isCustom || BUILTIN_RECIPE_NAMES.has(r.name);
+    const cardClass = isCustom ? "recipe-card custom-recipe" : "recipe-card";
+    const deleteBtn = `<button class="delete-recipe" onclick="event.stopPropagation();deleteRecipe('${r.name.replace(/'/g,"\\'")}')" title="Delete recipe">✕</button>`;
+    return `<div class="${cardClass}">
+      ${deleteBtn}
+      <h3>${r.name} ${isCustom ? '<span style="font-size:.65rem;background:#e8f5e9;color:var(--accent);padding:1px 6px;border-radius:8px;vertical-align:middle;">custom</span>' : ''}</h3>
       <div class="meta">${r.region} · ${r.meal.map(m => MEAL_LABELS[m]).join(", ")} · <strong>⏱ ${r.prep+r.cook}m</strong> (prep ${r.prep}m + cook ${r.cook}m)</div>
       <div>${r.tags.map(t => `<span class="recipe-tag">${t}</span>`).join("")}</div>
       <div class="ingredients" style="margin-top:8px"><strong>Ingredients:</strong> ${r.ingredients.join(", ")}</div>
       ${r.prepAhead && r.prepAhead.length ? `<div style="margin-top:6px;font-size:.78rem;color:var(--accent)"><strong>🧑‍🍳 Prep ahead:</strong> ${r.prepAhead.join(" · ")}</div>` : ""}
-    </div>`).join("");
+    </div>`;
+  }).join("");
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1557,9 +1663,79 @@ function renderVoteHistory() {
   container.innerHTML = html;
 }
 
+/* ═══════════════════════════════════════════════════════
+   ADD / DELETE RECIPES
+   ═══════════════════════════════════════════════════════ */
+function openAddRecipeModal() {
+  document.getElementById("newRecipeName").value = "";
+  document.getElementById("newRecipeRegion").value = "";
+  document.getElementById("newMealBreakfast").checked = false;
+  document.getElementById("newMealLunch").checked = false;
+  document.getElementById("newMealSnack").checked = false;
+  document.getElementById("newMealDinner").checked = true;
+  document.getElementById("newRecipePrep").value = "10";
+  document.getElementById("newRecipeCook").value = "20";
+  document.getElementById("newRecipeIngredients").value = "";
+  document.getElementById("newRecipeTags").value = "";
+  document.getElementById("newRecipePrepAhead").value = "";
+  document.getElementById("addRecipeModal").classList.add("show");
+  document.getElementById("newRecipeName").focus();
+}
+
+function closeAddRecipeModal() {
+  document.getElementById("addRecipeModal").classList.remove("show");
+}
+
+function saveNewRecipe() {
+  const name = document.getElementById("newRecipeName").value.trim();
+  const region = document.getElementById("newRecipeRegion").value.trim();
+  const meals = [];
+  if (document.getElementById("newMealBreakfast").checked) meals.push("breakfast");
+  if (document.getElementById("newMealLunch").checked) meals.push("lunch");
+  if (document.getElementById("newMealSnack").checked) meals.push("snack");
+  if (document.getElementById("newMealDinner").checked) meals.push("dinner");
+  const prep = parseInt(document.getElementById("newRecipePrep").value) || 0;
+  const cook = parseInt(document.getElementById("newRecipeCook").value) || 0;
+  const ingredients = document.getElementById("newRecipeIngredients").value.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+  const tags = document.getElementById("newRecipeTags").value.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+  const prepAhead = document.getElementById("newRecipePrepAhead").value.split(",").map(s => s.trim()).filter(Boolean);
+
+  if (!name) { alert("Please enter a recipe name."); return; }
+  if (!region) { alert("Please enter a cuisine/region."); return; }
+  if (!meals.length) { alert("Please select at least one meal slot."); return; }
+  if (!ingredients.length) { alert("Please enter at least one ingredient."); return; }
+  if (RECIPES.find(r => r.name.toLowerCase() === name.toLowerCase())) { alert("A recipe with this name already exists."); return; }
+
+  const recipe = { name, meal: meals, region, prep, cook, ingredients, tags, prepAhead, _custom: true };
+  RECIPES.push(recipe);
+  saveCustomRecipes();
+  closeAddRecipeModal();
+  renderRecipes();
+}
+
+function deleteRecipe(name) {
+  if (!confirm(`Delete "${name}" from the recipe bank?`)) return;
+  const idx = RECIPES.findIndex(r => r.name === name);
+  if (idx === -1) return;
+
+  const recipe = RECIPES[idx];
+  RECIPES.splice(idx, 1);
+
+  // If it was a built-in, add to deleted list so it stays hidden on reload
+  if (BUILTIN_RECIPE_NAMES.has(name)) {
+    deletedBuiltins.push(name);
+  }
+
+  saveCustomRecipes();
+  renderRecipes();
+}
+
 // Close modal on backdrop click or Escape
 document.getElementById("pickModal").addEventListener("click", e => { if (e.target === e.currentTarget) closeModal(); });
-document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+document.getElementById("addRecipeModal").addEventListener("click", e => { if (e.target === e.currentTarget) closeAddRecipeModal(); });
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") { closeModal(); closeAddRecipeModal(); }
+});
 </script>
 </body>
 </html>
