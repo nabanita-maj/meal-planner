@@ -23,12 +23,15 @@
 body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
 
 /* ── NAV ── */
-nav { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; padding: 14px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; box-shadow: 0 2px 12px rgba(0,0,0,.15); position: sticky; top: 0; z-index: 100; }
-nav h1 { font-size: 1.35rem; flex: 1; white-space: nowrap; }
+nav { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; padding: 14px 24px 8px; box-shadow: 0 2px 12px rgba(0,0,0,.15); position: sticky; top: 0; z-index: 100; overflow: hidden; }
+nav h1 { font-size: 1.35rem; white-space: nowrap; margin-bottom: 8px; }
 nav h1 span { font-weight: 300; font-size: .85rem; opacity: .85; margin-left: 8px; }
-.tab-bar { display: flex; gap: 4px; }
-.tab-btn { background: rgba(255,255,255,.15); border: none; color: #fff; padding: 7px 16px; border-radius: 20px; cursor: pointer; font-size: .85rem; transition: .2s; }
+.tab-wrapper { position: relative; margin: 0 -24px; }
+.tab-bar { display: flex; gap: 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 0 24px 8px; }
+.tab-bar::-webkit-scrollbar { display: none; }
+.tab-btn { background: rgba(255,255,255,.15); border: none; color: #fff; padding: 7px 16px; border-radius: 20px; cursor: pointer; font-size: .85rem; transition: .2s; white-space: nowrap; flex: 0 0 auto; }
 .tab-btn:hover, .tab-btn.active { background: #fff; color: var(--primary-dark); font-weight: 600; }
+.scroll-hint { display: none; position: absolute; right: 0; top: 0; bottom: 0; width: 36px; background: linear-gradient(to right, transparent, var(--primary-dark)); pointer-events: none; transition: opacity .3s; color: #fff; font-size: 1.2rem; line-height: 1; padding-top: 8px; text-align: center; }
 
 /* ── LAYOUT ── */
 .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
@@ -226,13 +229,17 @@ section.active { display: block; }
   .data-bar { gap: 4px; }
   .data-bar button { padding: 6px 10px; font-size: .75rem; }
   .pantry-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+  .scroll-hint { display: block; }
 }
 @media (max-width: 600px) {
   .week-grid { grid-template-columns: 55px repeat(7, 1fr); font-size: .65rem; }
   .meal-cell { min-height: 45px; }
   .recipe-grid { grid-template-columns: 1fr; }
-  nav { padding: 10px 12px; }
+  nav { padding: 10px 12px 6px; }
   nav h1 { font-size: 1.1rem; }
+  .tab-wrapper { margin: 0 -12px; }
+  .tab-bar { padding: 0 12px 6px; }
+  .tab-btn { padding: 6px 12px; font-size: .78rem; }
   .pantry-grid { grid-template-columns: 1fr 1fr; }
 }
 </style>
@@ -242,14 +249,17 @@ section.active { display: block; }
 <!-- ════════ NAV ════════ -->
 <nav>
   <h1>🍛 Meal Planner <span>Rahul · Nabanita · Vedanshi</span></h1>
-  <div class="tab-bar">
-    <button class="tab-btn active" data-tab="planner">📅 Planner</button>
-    <button class="tab-btn" data-tab="recipes">📖 Recipes</button>
-    <button class="tab-btn" data-tab="grocery">🛒 Grocery</button>
-    <button class="tab-btn" data-tab="prep">🧑‍🍳 Prep</button>
-    <button class="tab-btn" data-tab="pantry">🏪 Pantry</button>
-    <button class="tab-btn" data-tab="roulette">🎰 Roulette</button>
-    <button class="tab-btn" data-tab="vote">🗳️ Vote</button>
+  <div class="tab-wrapper">
+    <div class="tab-bar" id="tabBar">
+      <button class="tab-btn active" data-tab="planner">📅 Planner</button>
+      <button class="tab-btn" data-tab="recipes">📖 Recipes</button>
+      <button class="tab-btn" data-tab="grocery">🛒 Grocery</button>
+      <button class="tab-btn" data-tab="prep">🧑‍🍳 Prep</button>
+      <button class="tab-btn" data-tab="pantry">🏪 Pantry</button>
+      <button class="tab-btn" data-tab="roulette">🎰 Roulette</button>
+      <button class="tab-btn" data-tab="vote">🗳️ Vote</button>
+    </div>
+    <div class="scroll-hint" id="scrollHint">›</div>
   </div>
 </nav>
 
@@ -692,6 +702,16 @@ window.addEventListener("DOMContentLoaded", () => {
   renderWeek();
   renderRecipes();
   setupTabs();
+  // Hide scroll hint when tab bar is scrolled to the end
+  const tabBar = document.getElementById("tabBar");
+  const hint = document.getElementById("scrollHint");
+  function updateScrollHint() {
+    if (!hint) return;
+    const atEnd = tabBar.scrollLeft + tabBar.clientWidth >= tabBar.scrollWidth - 5;
+    hint.style.opacity = atEnd ? "0" : "1";
+  }
+  tabBar.addEventListener("scroll", updateScrollHint);
+  updateScrollHint();
 });
 
 /* ═══════════════════════════════════════════════════════
@@ -704,6 +724,7 @@ function setupTabs() {
       btn.classList.add("active");
       document.querySelectorAll("section").forEach(s => s.classList.remove("active"));
       document.getElementById("section-" + btn.dataset.tab).classList.add("active");
+      btn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
       if (btn.dataset.tab === "grocery") renderGrocery();
       if (btn.dataset.tab === "prep") renderWeekendPrep();
       if (btn.dataset.tab === "pantry") { renderPantry(); renderIngredientLookup(); }
