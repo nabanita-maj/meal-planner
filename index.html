@@ -251,13 +251,13 @@ section.active { display: block; }
   <h1>🍛 Meal Planner <span>Rahul · Nabanita · Vedanshi</span></h1>
   <div class="tab-wrapper">
     <div class="tab-bar" id="tabBar">
-      <button class="tab-btn active" data-tab="planner">📅 Planner</button>
+      <button class="tab-btn active" data-tab="vote">🗳️ Vote</button>
+      <button class="tab-btn" data-tab="roulette">🎰 Roulette</button>
+      <button class="tab-btn" data-tab="planner">📅 Planner</button>
       <button class="tab-btn" data-tab="recipes">📖 Recipes</button>
       <button class="tab-btn" data-tab="grocery">🛒 Grocery</button>
       <button class="tab-btn" data-tab="prep">🧑‍🍳 Prep</button>
       <button class="tab-btn" data-tab="pantry">🏪 Pantry</button>
-      <button class="tab-btn" data-tab="roulette">🎰 Roulette</button>
-      <button class="tab-btn" data-tab="vote">🗳️ Vote</button>
     </div>
     <div class="scroll-hint" id="scrollHint">›</div>
   </div>
@@ -276,7 +276,7 @@ section.active { display: block; }
   </div>
 
   <!-- ════════ PLANNER TAB ════════ -->
-  <section id="section-planner" class="active">
+  <section id="section-planner">
     <div class="card">
       <div class="week-header">
         <h2>📅 Weekly Meal Plan</h2>
@@ -412,7 +412,7 @@ section.active { display: block; }
   </section>
 
   <!-- ════════ DINNER VOTE TAB ════════ -->
-  <section id="section-vote">
+  <section id="section-vote" class="active">
     <div class="card">
       <h2>🗳️ Dinner Vote — What's for dinner?</h2>
       <p style="font-size:.85rem;color:var(--text-light);margin-bottom:14px;">
@@ -702,6 +702,7 @@ window.addEventListener("DOMContentLoaded", () => {
   renderWeek();
   renderRecipes();
   setupTabs();
+  renderVote();
   // Hide scroll hint when tab bar is scrolled to the end
   const tabBar = document.getElementById("tabBar");
   const hint = document.getElementById("scrollHint");
