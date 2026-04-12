@@ -343,6 +343,10 @@ section.active { display: block; }
         <button class="btn-accent" onclick="markAllInStock()">✅ Mark All In-Stock</button>
         <button class="btn-secondary" onclick="clearPantry()">Clear All</button>
       </div>
+      <div class="pantry-controls" style="margin-bottom:14px;">
+        <input type="text" id="addIngredientInput" placeholder="Add a custom ingredient (e.g. oat milk, sriracha)..." onkeydown="if(event.key==='Enter')addCustomIngredient()">
+        <button class="btn-primary" onclick="addCustomIngredient()">+ Add</button>
+      </div>
       <div class="pantry-grid" id="pantryGrid"></div>
     </div>
     <div class="card" style="margin-top:16px;">
@@ -1006,27 +1010,38 @@ function renderWeekendPrep() {
 /* ═══════════════════════════════════════════════════════
    PANTRY TRACKER
    ═══════════════════════════════════════════════════════ */
-let pantryStock = {}; // { "onion": true, "paneer": false }
+let pantryStock = {};   // { "onion": true, "paneer": false }
+let customIngredients = []; // ["oat milk", "sriracha", ...]
 
 function loadPantry() {
   try {
     const saved = localStorage.getItem("familyPantry");
     if (saved) pantryStock = JSON.parse(saved);
+    const savedCustom = localStorage.getItem("familyPantryCustom");
+    if (savedCustom) customIngredients = JSON.parse(savedCustom);
   } catch(e) { /* corrupt */ }
 }
 
 function savePantry() {
-  try { localStorage.setItem("familyPantry", JSON.stringify(pantryStock)); } catch(e) {}
+  try {
+    localStorage.setItem("familyPantry", JSON.stringify(pantryStock));
+    localStorage.setItem("familyPantryCustom", JSON.stringify(customIngredients));
+  } catch(e) {}
 }
 
 function getAllIngredients() {
   const map = {};
   RECIPES.forEach(r => {
     r.ingredients.forEach(ing => {
-      if (!map[ing]) map[ing] = { count: 0, dishes: [] };
+      if (!map[ing]) map[ing] = { count: 0, dishes: [], custom: false };
       map[ing].count++;
       map[ing].dishes.push(r.name);
     });
+  });
+  // Merge custom ingredients
+  customIngredients.forEach(ing => {
+    if (!map[ing]) map[ing] = { count: 0, dishes: [], custom: true };
+    else map[ing].custom = false; // exists in recipes too, not purely custom
   });
   return map;
 }
@@ -1084,11 +1099,19 @@ function renderPantry() {
   document.getElementById("pantryGrid").innerHTML = filtered.map(ing => {
     const checked = pantryStock[ing] ? "checked" : "";
     const cls = pantryStock[ing] ? "pantry-item in-stock" : "pantry-item";
-    const weekBadge = weekIngs[ing] ? `<span class="usage-count" style="color:var(--primary);font-weight:600;">needed ×${weekIngs[ing]}</span>` : `<span class="usage-count">${allIngs[ing].count} recipes</span>`;
+    const isCustom = allIngs[ing].custom || customIngredients.includes(ing);
+    const weekBadge = weekIngs[ing]
+      ? `<span class="usage-count" style="color:var(--primary);font-weight:600;">needed ×${weekIngs[ing]}</span>`
+      : isCustom && !allIngs[ing].count
+        ? `<span class="usage-count" style="color:#9e9e9e;">custom</span>`
+        : `<span class="usage-count">${allIngs[ing].count} recipes</span>`;
+    const removeBtn = isCustom
+      ? `<button onclick="event.preventDefault();removeCustomIngredient('${ing.replace(/'/g,"\\'")}')" style="background:none;border:none;color:#bbb;cursor:pointer;font-size:.85rem;padding:0 2px;" title="Remove">✕</button>`
+      : "";
     return `<label class="${cls}">
       <input type="checkbox" ${checked} onchange="togglePantryItem('${ing.replace(/'/g,"\\'")}', this.checked)">
       <span class="item-name">${ing}</span>
-      ${weekBadge}
+      ${weekBadge}${removeBtn}
     </label>`;
   }).join("");
 }
@@ -1109,6 +1132,26 @@ function markAllInStock() {
 function clearPantry() {
   if (!confirm("Clear all pantry check marks?")) return;
   pantryStock = {};
+  savePantry();
+  renderPantry();
+}
+
+function addCustomIngredient() {
+  const input = document.getElementById("addIngredientInput");
+  const name = input.value.trim().toLowerCase();
+  if (!name) return;
+  if (!customIngredients.includes(name)) {
+    customIngredients.push(name);
+  }
+  pantryStock[name] = true; // mark in-stock by default
+  savePantry();
+  input.value = "";
+  renderPantry();
+}
+
+function removeCustomIngredient(name) {
+  customIngredients = customIngredients.filter(i => i !== name);
+  delete pantryStock[name];
   savePantry();
   renderPantry();
 }
