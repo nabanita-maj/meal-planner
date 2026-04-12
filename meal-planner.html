@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🍛 Family Meal Planner — Rahul, Nabanita &amp; Vedanshi</title>
+<style>
+:root {
+  --primary: #e65100;
+  --primary-light: #ff833a;
+  --primary-dark: #ac1900;
+  --accent: #2e7d32;
+  --accent-light: #60ad5e;
+  --bg: #fff8f0;
+  --card: #ffffff;
+  --border: #ffe0b2;
+  --text: #3e2723;
+  --text-light: #795548;
+  --shadow: 0 2px 8px rgba(0,0,0,.08);
+  --radius: 10px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+
+/* ── NAV ── */
+nav { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; padding: 14px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; box-shadow: 0 2px 12px rgba(0,0,0,.15); position: sticky; top: 0; z-index: 100; }
+nav h1 { font-size: 1.35rem; flex: 1; white-space: nowrap; }
+nav h1 span { font-weight: 300; font-size: .85rem; opacity: .85; margin-left: 8px; }
+.tab-bar { display: flex; gap: 4px; }
+.tab-btn { background: rgba(255,255,255,.15); border: none; color: #fff; padding: 7px 16px; border-radius: 20px; cursor: pointer; font-size: .85rem; transition: .2s; }
+.tab-btn:hover, .tab-btn.active { background: #fff; color: var(--primary-dark); font-weight: 600; }
+
+/* ── LAYOUT ── */
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+section { display: none; }
+section.active { display: block; }
+
+/* ── CARDS ── */
+.card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; margin-bottom: 16px; border: 1px solid var(--border); }
+.card h2 { color: var(--primary); font-size: 1.1rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+
+/* ── WEEK GRID ── */
+.week-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.week-header h2 { margin: 0; }
+.week-nav { display: flex; gap: 6px; align-items: center; }
+.week-nav button { background: var(--primary); color: #fff; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: .85rem; }
+.week-nav button:hover { background: var(--primary-dark); }
+.week-nav span { font-weight: 600; min-width: 200px; text-align: center; }
+
+.week-grid { display: grid; grid-template-columns: 100px repeat(7, 1fr); gap: 2px; font-size: .82rem; }
+.week-grid .header { background: var(--primary); color: #fff; padding: 8px 6px; text-align: center; font-weight: 600; border-radius: 4px; }
+.week-grid .header.today { background: #ff6f00; }
+.week-grid .meal-label { background: var(--accent); color: #fff; padding: 8px 6px; text-align: center; font-weight: 600; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+.meal-cell { background: #fff; border: 1px solid var(--border); border-radius: 6px; padding: 6px; min-height: 70px; position: relative; cursor: pointer; transition: .15s; }
+.meal-cell:hover { border-color: var(--primary-light); box-shadow: 0 0 0 2px rgba(230,81,0,.15); }
+.meal-cell .dish-name { font-weight: 500; font-size: .8rem; color: var(--text); }
+.meal-cell .clear-btn { position: absolute; top: 2px; right: 4px; background: none; border: none; color: #bbb; cursor: pointer; font-size: .9rem; line-height: 1; }
+.meal-cell .clear-btn:hover { color: #e53935; }
+.meal-cell.empty { color: #bbb; font-style: italic; display: flex; align-items: center; justify-content: center; }
+
+/* ── RECIPE BANK ── */
+.recipe-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.recipe-filters select, .recipe-filters input { padding: 7px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: .85rem; }
+.recipe-filters input { flex: 1; min-width: 180px; }
+.recipe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.recipe-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; transition: .2s; }
+.recipe-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); transform: translateY(-2px); }
+.recipe-card h3 { font-size: .95rem; color: var(--primary-dark); margin-bottom: 4px; }
+.recipe-card .meta { font-size: .75rem; color: var(--text-light); margin-bottom: 6px; }
+.recipe-card .ingredients { font-size: .78rem; color: #555; }
+.recipe-tag { display: inline-block; background: #fff3e0; color: var(--primary); padding: 2px 8px; border-radius: 10px; font-size: .7rem; margin: 2px 2px 0 0; font-weight: 500; }
+
+/* ── GROCERY ── */
+.grocery-list { columns: 2; column-gap: 24px; }
+.grocery-category { break-inside: avoid; margin-bottom: 16px; }
+.grocery-category h3 { font-size: .9rem; color: var(--accent); border-bottom: 2px solid var(--accent-light); padding-bottom: 4px; margin-bottom: 6px; }
+.grocery-category li { list-style: none; padding: 3px 0; font-size: .85rem; }
+.grocery-category li::before { content: '☐ '; color: var(--primary); }
+
+/* ── MODAL ── */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; align-items: center; justify-content: center; }
+.modal-overlay.show { display: flex; }
+.modal { background: #fff; border-radius: var(--radius); padding: 24px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,.2); }
+.modal h2 { color: var(--primary); margin-bottom: 12px; }
+.modal .search { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 12px; font-size: .9rem; }
+.modal .pick-list { max-height: 40vh; overflow-y: auto; }
+.pick-item { padding: 10px; border-bottom: 1px solid #f5f5f5; cursor: pointer; border-radius: 6px; transition: .15s; }
+.pick-item:hover { background: #fff3e0; }
+.pick-item h4 { font-size: .9rem; color: var(--primary-dark); }
+.pick-item p { font-size: .75rem; color: var(--text-light); }
+.modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+.modal-actions button { flex: 1; padding: 9px; border: none; border-radius: 6px; cursor: pointer; font-size: .85rem; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-secondary { background: #eee; color: var(--text); }
+.btn-accent { background: var(--accent); color: #fff; }
+.btn-accent:hover { background: #1b5e20; }
+
+/* ── DATA BUTTONS ── */
+.data-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.data-bar button { padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: #fff; font-size: .82rem; transition: .15s; }
+.data-bar button:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* ── PRINT ── */
+@media print {
+  nav, .tab-bar, .data-bar, .recipe-filters, .modal-overlay,
+  .btn-primary, .btn-secondary, .btn-accent, .clear-btn,
+  .week-nav button, .pantry-controls,
+  #section-recipes, #section-grocery, #section-prep, #section-pantry, #section-roulette { display: none !important; }
+  section { display: block !important; }
+  #section-planner { display: block !important; }
+  .week-grid { font-size: .7rem; }
+  .meal-cell { border: 1px solid #ccc; }
+  body { background: #fff; }
+  .container { padding: 0; max-width: 100%; }
+  .card { box-shadow: none; border: none; padding: 10px; }
+  .week-nav span { font-size: 1rem; }
+}
+
+/* ── PREP TIME BADGES ── */
+.prep-badge { font-size: .65rem; color: var(--text-light); margin-top: 2px; }
+.prep-badge span { background: #e8f5e9; color: var(--accent); padding: 1px 5px; border-radius: 8px; font-weight: 500; }
+
+/* ── WEEKEND PREP ── */
+.prep-section { margin-bottom: 20px; }
+.prep-section h3 { font-size: .95rem; color: var(--accent); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.prep-day { break-inside: avoid; margin-bottom: 14px; }
+.prep-day h4 { font-size: .85rem; color: var(--primary); margin-bottom: 4px; }
+.prep-task { padding: 4px 0; font-size: .82rem; border-bottom: 1px solid #f5f5f5; }
+.prep-task .dish-ref { color: var(--text-light); font-size: .75rem; }
+.prep-summary { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; padding: 12px; background: #e8f5e9; border-radius: var(--radius); font-size: .85rem; }
+.prep-summary .stat { font-weight: 600; color: var(--accent); }
+
+/* ── PANTRY TRACKER ── */
+.pantry-controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.pantry-controls input { flex: 1; min-width: 200px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: .85rem; }
+.pantry-controls button { padding: 8px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: .82rem; }
+.pantry-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
+.pantry-item { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 6px; font-size: .82rem; border: 1px solid #f0f0f0; transition: .15s; }
+.pantry-item:hover { background: #fff3e0; }
+.pantry-item.in-stock { background: #e8f5e9; border-color: #c8e6c9; }
+.pantry-item input[type=checkbox] { accent-color: var(--accent); }
+.pantry-item .item-name { flex: 1; }
+.pantry-item .usage-count { font-size: .7rem; color: var(--text-light); }
+.missing-banner { background: #fff3e0; border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 14px; font-size: .85rem; }
+.missing-banner strong { color: var(--primary); }
+
+/* ── INGREDIENT LOOKUP ── */
+.ingredient-search { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: .9rem; margin-bottom: 14px; }
+.ingredient-result { padding: 10px 12px; border-bottom: 1px solid #f5f5f5; }
+.ingredient-result h4 { font-size: .9rem; color: var(--primary-dark); }
+.ingredient-result .used-in { font-size: .78rem; color: var(--text-light); margin-top: 2px; }
+.ingredient-result .used-in span { background: #fff3e0; padding: 1px 6px; border-radius: 8px; margin: 1px 2px; display: inline-block; font-size: .72rem; color: var(--primary); }
+
+/* ── RECIPE ROULETTE ── */
+.roulette-container { text-align: center; padding: 20px 0; }
+.roulette-wheel { position: relative; width: 280px; height: 280px; margin: 0 auto 20px; }
+.roulette-wheel canvas { width: 280px; height: 280px; }
+.roulette-pointer { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); font-size: 2rem; z-index: 2; filter: drop-shadow(0 2px 4px rgba(0,0,0,.3)); }
+.roulette-result { min-height: 80px; margin: 16px 0; }
+.roulette-result .dish-reveal { font-size: 1.4rem; font-weight: 700; color: var(--primary-dark); animation: popIn .4s ease; }
+.roulette-result .dish-meta { font-size: .85rem; color: var(--text-light); margin-top: 4px; }
+.roulette-result .match-bar { margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; background: #e8f5e9; padding: 4px 14px; border-radius: 20px; font-size: .82rem; color: var(--accent); font-weight: 600; }
+.roulette-controls { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px; }
+.roulette-controls select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: .85rem; }
+.spin-btn { background: linear-gradient(135deg, var(--primary), #ff6f00); color: #fff; border: none; padding: 14px 36px; border-radius: 30px; font-size: 1.1rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(230,81,0,.3); transition: .2s; }
+.spin-btn:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(230,81,0,.4); }
+.spin-btn:active { transform: scale(.97); }
+.spin-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.roulette-candidates { margin-top: 20px; text-align: left; }
+.roulette-candidates h3 { font-size: .9rem; color: var(--text-light); margin-bottom: 8px; }
+.candidate-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; }
+.candidate-chip { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-radius: 6px; font-size: .8rem; background: #fafafa; border: 1px solid #f0f0f0; }
+.candidate-chip .pct { font-weight: 600; color: var(--accent); font-size: .75rem; }
+@keyframes popIn { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .week-grid { grid-template-columns: 70px repeat(7, 1fr); font-size: .7rem; }
+  .meal-cell { min-height: 55px; padding: 4px; }
+  .grocery-list { columns: 1; }
+  nav h1 span { display: none; }
+  .data-bar { gap: 4px; }
+  .data-bar button { padding: 6px 10px; font-size: .75rem; }
+  .pantry-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+}
+@media (max-width: 600px) {
+  .week-grid { grid-template-columns: 55px repeat(7, 1fr); font-size: .65rem; }
+  .meal-cell { min-height: 45px; }
+  .recipe-grid { grid-template-columns: 1fr; }
+  nav { padding: 10px 12px; }
+  nav h1 { font-size: 1.1rem; }
+  .pantry-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════ NAV ════════ -->
+<nav>
+  <h1>🍛 Meal Planner <span>Rahul · Nabanita · Vedanshi</span></h1>
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="planner">📅 Planner</button>
+    <button class="tab-btn" data-tab="recipes">📖 Recipes</button>
+    <button class="tab-btn" data-tab="grocery">🛒 Grocery</button>
+    <button class="tab-btn" data-tab="prep">🧑‍🍳 Prep</button>
+    <button class="tab-btn" data-tab="pantry">🏪 Pantry</button>
+    <button class="tab-btn" data-tab="roulette">🎰 Roulette</button>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- DATA BAR -->
+  <div class="data-bar">
+    <button onclick="exportData()">💾 Save to File</button>
+    <button onclick="document.getElementById('importFile').click()">📂 Load from File</button>
+    <button onclick="autoFillWeek()">🎲 Auto-Fill Week</button>
+    <button onclick="clearWeek()">🗑️ Clear Week</button>
+    <button onclick="window.print()">🖨️ Print Week</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+
+  <!-- ════════ PLANNER TAB ════════ -->
+  <section id="section-planner" class="active">
+    <div class="card">
+      <div class="week-header">
+        <h2>📅 Weekly Meal Plan</h2>
+        <div class="week-nav">
+          <button onclick="changeWeek(-1)">◀ Prev</button>
+          <span id="weekLabel"></span>
+          <button onclick="changeWeek(1)">Next ▶</button>
+          <button onclick="goToCurrentWeek()">Today</button>
+        </div>
+      </div>
+      <div class="week-grid" id="weekGrid"></div>
+    </div>
+  </section>
+
+  <!-- ════════ RECIPES TAB ════════ -->
+  <section id="section-recipes">
+    <div class="card">
+      <h2>📖 Vegetarian Recipe Bank</h2>
+      <div class="recipe-filters">
+        <select id="filterMeal" onchange="renderRecipes()">
+          <option value="">All Meals</option>
+          <option value="breakfast">Breakfast</option>
+          <option value="lunch">Lunch</option>
+          <option value="snack">Snack</option>
+          <option value="dinner">Dinner</option>
+        </select>
+        <select id="filterRegion" onchange="renderRecipes()">
+          <option value="">All Cuisines</option>
+          <optgroup label="Indian">
+            <option value="North Indian">North Indian</option>
+            <option value="South Indian">South Indian</option>
+            <option value="Bengali">Bengali</option>
+            <option value="Gujarati">Gujarati</option>
+            <option value="Maharashtrian">Maharashtrian</option>
+            <option value="Rajasthani">Rajasthani</option>
+            <option value="Pan-Indian">Pan-Indian</option>
+          </optgroup>
+          <optgroup label="International">
+            <option value="Mexican">Mexican</option>
+            <option value="Thai">Thai</option>
+            <option value="Italian">Italian</option>
+            <option value="Chinese">Chinese</option>
+            <option value="Japanese">Japanese</option>
+            <option value="Korean">Korean</option>
+            <option value="Middle Eastern">Middle Eastern</option>
+            <option value="Mediterranean">Mediterranean</option>
+          </optgroup>
+        </select>
+        <input type="text" id="filterSearch" placeholder="Search recipes..." oninput="renderRecipes()">
+      </div>
+      <div class="recipe-grid" id="recipeGrid"></div>
+    </div>
+  </section>
+
+  <!-- ════════ GROCERY TAB ════════ -->
+  <section id="section-grocery">
+    <div class="card">
+      <h2>🛒 Grocery List for This Week</h2>
+      <p style="font-size:.85rem;color:var(--text-light);margin-bottom:14px;">
+        Auto-generated from your current week's meal plan. Only planned dishes contribute items.
+      </p>
+      <div class="grocery-list" id="groceryList"></div>
+    </div>
+  </section>
+
+  <!-- ════════ WEEKEND PREP TAB ════════ -->
+  <section id="section-prep">
+    <div class="card">
+      <h2>🧑‍🍳 Weekend Prep Guide</h2>
+      <p style="font-size:.85rem;color:var(--text-light);margin-bottom:14px;">
+        Smart prep plan based on your upcoming week's meals. Do these on the weekend to make weekday cooking fast &amp; smooth.
+      </p>
+      <div id="prepSummary"></div>
+      <div id="prepContent"></div>
+    </div>
+  </section>
+
+  <!-- ════════ PANTRY TAB ════════ -->
+  <section id="section-pantry">
+    <div class="card">
+      <h2>🏪 Pantry Tracker &amp; Ingredient Lookup</h2>
+      <div id="pantryMissing"></div>
+      <div class="pantry-controls">
+        <input type="text" id="pantryFilter" placeholder="Search ingredients..." oninput="renderPantry()">
+        <button class="btn-accent" onclick="markAllInStock()">✅ Mark All In-Stock</button>
+        <button class="btn-secondary" onclick="clearPantry()">Clear All</button>
+      </div>
+      <div class="pantry-grid" id="pantryGrid"></div>
+    </div>
+    <div class="card" style="margin-top:16px;">
+      <h2>🔍 Ingredient Lookup</h2>
+      <input class="ingredient-search" id="ingredientSearch" placeholder="Type an ingredient to see which dishes use it..." oninput="renderIngredientLookup()">
+      <div id="ingredientResults"></div>
+    </div>
+  </section>
+
+  <!-- ════════ ROULETTE TAB ════════ -->
+  <section id="section-roulette">
+    <div class="card">
+      <h2>🎰 Recipe Roulette</h2>
+      <p style="font-size:.85rem;color:var(--text-light);margin-bottom:16px;">
+        Can't decide? Spin the wheel! Dishes are <strong>weighted by pantry match</strong> — the more ingredients you have, the higher the chance.
+      </p>
+      <div class="roulette-controls">
+        <select id="rouletteMeal" onchange="prepareRoulette()">
+          <option value="">Any Meal</option>
+          <option value="breakfast">Breakfast</option>
+          <option value="lunch">Lunch</option>
+          <option value="snack">Snack</option>
+          <option value="dinner">Dinner</option>
+        </select>
+        <select id="rouletteRegion" onchange="prepareRoulette()">
+          <option value="">Any Cuisine</option>
+          <option value="indian">Indian</option>
+          <option value="international">International</option>
+        </select>
+      </div>
+      <div class="roulette-container">
+        <div class="roulette-wheel">
+          <div class="roulette-pointer">▼</div>
+          <canvas id="rouletteCanvas" width="560" height="560"></canvas>
+        </div>
+        <button class="spin-btn" id="spinBtn" onclick="spinWheel()">🎲 SPIN!</button>
+        <div class="roulette-result" id="rouletteResult"></div>
+      </div>
+      <div class="roulette-candidates" id="rouletteCandidates"></div>
+    </div>
+  </section>
+</div>
+
+<!-- ════════ PICK DISH MODAL ════════ -->
+<div class="modal-overlay" id="pickModal">
+  <div class="modal">
+    <h2 id="pickModalTitle">Pick a Dish</h2>
+    <input class="search" id="pickSearch" placeholder="Search dishes..." oninput="filterPickList()">
+    <div class="pick-list" id="pickList"></div>
+    <div class="modal-actions">
+      <button class="btn-accent" onclick="randomPick()">🎲 Random</button>
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   RECIPE DATA — 65 Indian Vegetarian Recipes
+   ═══════════════════════════════════════════════════════ */
+const RECIPES = [
+  // ── BREAKFAST (17) ──  [prep = minutes before cooking, cook = active cooking]
+  { name:"Poha", meal:["breakfast"], region:"Maharashtrian", prep:5, cook:10, ingredients:["flattened rice","onion","peanuts","mustard seeds","curry leaves","turmeric","green chili","lemon"], tags:["quick","light"], prepAhead:["Chop onions & green chili"] },
+  { name:"Upma", meal:["breakfast"], region:"South Indian", prep:5, cook:12, ingredients:["semolina","onion","mustard seeds","curry leaves","green chili","cashews","ghee"], tags:["quick"], prepAhead:["Dry-roast semolina","Chop onions"] },
+  { name:"Idli Sambar", meal:["breakfast"], region:"South Indian", prep:10, cook:25, ingredients:["idli batter","toor dal","drumstick","tomato","tamarind","sambar powder","mustard seeds","curry leaves"], tags:["traditional","fermented"], prepAhead:["Ferment idli batter overnight","Soak toor dal","Chop sambar vegetables","Make tamarind extract"] },
+  { name:"Dosa & Chutney", meal:["breakfast"], region:"South Indian", prep:5, cook:15, ingredients:["dosa batter","coconut","green chili","ginger","curry leaves","chana dal","mustard seeds"], tags:["fermented","crispy"], prepAhead:["Ferment dosa batter overnight","Grind coconut chutney"] },
+  { name:"Aloo Paratha", meal:["breakfast"], region:"North Indian", prep:20, cook:20, ingredients:["wheat flour","potato","green chili","coriander","cumin","ghee","curd"], tags:["hearty","stuffed"], prepAhead:["Boil & mash potatoes","Knead dough","Make stuffing mix"] },
+  { name:"Gobi Paratha", meal:["breakfast"], region:"North Indian", prep:20, cook:20, ingredients:["wheat flour","cauliflower","green chili","coriander","cumin","ghee","pickle"], tags:["hearty","stuffed"], prepAhead:["Grate cauliflower & squeeze water","Knead dough"] },
+  { name:"Moong Dal Chilla", meal:["breakfast"], region:"North Indian", prep:10, cook:15, ingredients:["moong dal","onion","tomato","green chili","coriander","cumin"], tags:["protein","quick"], prepAhead:["Soak & grind moong dal (4 hrs or overnight)","Chop onions & tomato"] },
+  { name:"Besan Chilla", meal:["breakfast"], region:"Rajasthani", prep:5, cook:10, ingredients:["besan","onion","tomato","green chili","coriander","ajwain"], tags:["protein","quick"], prepAhead:["Chop onions, tomato, coriander"] },
+  { name:"Rava Dosa", meal:["breakfast"], region:"South Indian", prep:5, cook:15, ingredients:["semolina","rice flour","maida","cumin","pepper","onion","curry leaves","coriander"], tags:["crispy","instant"], prepAhead:["Mix batter 30 min ahead"] },
+  { name:"Puri Bhaji", meal:["breakfast"], region:"North Indian", prep:15, cook:20, ingredients:["wheat flour","potato","onion","tomato","cumin","turmeric","oil"], tags:["indulgent"], prepAhead:["Boil potatoes","Knead dough"] },
+  { name:"Medu Vada", meal:["breakfast"], region:"South Indian", prep:15, cook:20, ingredients:["urad dal","onion","green chili","curry leaves","ginger","pepper","oil"], tags:["crispy","fermented"], prepAhead:["Soak urad dal (4 hrs)","Grind to batter"] },
+  { name:"Sabudana Khichdi", meal:["breakfast"], region:"Maharashtrian", prep:10, cook:15, ingredients:["sabudana","peanuts","potato","cumin","green chili","curry leaves","ghee","lemon"], tags:["fasting"], prepAhead:["Soak sabudana overnight","Roast & crush peanuts","Boil potato"] },
+  { name:"Bread Pakora", meal:["breakfast"], region:"North Indian", prep:10, cook:15, ingredients:["bread","besan","potato","green chili","coriander","chaat masala","oil"], tags:["indulgent"], prepAhead:["Boil & mash potatoes","Make stuffing"] },
+  { name:"Vermicelli Upma", meal:["breakfast"], region:"South Indian", prep:5, cook:10, ingredients:["vermicelli","onion","mustard seeds","curry leaves","peanuts","green chili","lemon"], tags:["quick"], prepAhead:["Chop onions"] },
+  { name:"Thepla", meal:["breakfast"], region:"Gujarati", prep:15, cook:20, ingredients:["wheat flour","methi leaves","curd","turmeric","cumin","sesame seeds","oil"], tags:["travel-friendly"], prepAhead:["Wash & chop methi leaves","Knead dough 30 min ahead"] },
+  { name:"Uttapam", meal:["breakfast"], region:"South Indian", prep:5, cook:15, ingredients:["dosa batter","onion","tomato","capsicum","green chili","coriander"], tags:["fermented","thick"], prepAhead:["Ferment batter overnight","Dice toppings"] },
+  { name:"Luchi & Alur Dom", meal:["breakfast"], region:"Bengali", prep:15, cook:25, ingredients:["maida","potato","tomato","ginger","cumin","bay leaf","ghee","oil"], tags:["bengali special","indulgent"], prepAhead:["Boil potatoes","Knead maida dough"] },
+
+  // ── LUNCH (21) ──
+  { name:"Dal Tadka & Rice", meal:["lunch","dinner"], region:"North Indian", prep:10, cook:25, ingredients:["toor dal","onion","tomato","garlic","cumin","ghee","turmeric","red chili","coriander","rice"], tags:["everyday","comfort"], prepAhead:["Soak toor dal 30 min","Chop onion, tomato, garlic","Wash & soak rice"] },
+  { name:"Rajma Chawal", meal:["lunch"], region:"North Indian", prep:10, cook:40, ingredients:["kidney beans","onion","tomato","ginger","garlic","cumin","bay leaf","coriander","rice"], tags:["protein","hearty"], prepAhead:["Soak rajma overnight","Pressure-cook rajma","Chop onion & tomato"] },
+  { name:"Chole & Rice", meal:["lunch"], region:"North Indian", prep:10, cook:35, ingredients:["chickpeas","onion","tomato","ginger","garlic","chole masala","coriander","rice"], tags:["protein"], prepAhead:["Soak chickpeas overnight","Pressure-cook chickpeas","Chop onion & tomato"] },
+  { name:"Kadhi Chawal", meal:["lunch"], region:"North Indian", prep:10, cook:25, ingredients:["curd","besan","onion","fenugreek","mustard seeds","cumin","turmeric","rice"], tags:["comfort","tangy"], prepAhead:["Whisk curd-besan mixture","Make pakora batter"] },
+  { name:"Sambar Rice", meal:["lunch"], region:"South Indian", prep:15, cook:30, ingredients:["toor dal","mixed vegetables","tamarind","sambar powder","mustard seeds","curry leaves","rice"], tags:["everyday"], prepAhead:["Soak dal","Chop all vegetables","Make tamarind extract"] },
+  { name:"Rasam Rice", meal:["lunch"], region:"South Indian", prep:5, cook:20, ingredients:["tomato","tamarind","pepper","cumin","garlic","mustard seeds","curry leaves","rice"], tags:["light","soothing"], prepAhead:["Make tamarind extract","Crush pepper & cumin"] },
+  { name:"Bisi Bele Bath", meal:["lunch"], region:"South Indian", prep:15, cook:35, ingredients:["rice","toor dal","mixed vegetables","tamarind","bisi bele bath powder","ghee","cashews"], tags:["one-pot"], prepAhead:["Soak dal","Chop vegetables","Make tamarind extract"] },
+  { name:"Veg Pulao", meal:["lunch"], region:"Pan-Indian", prep:10, cook:20, ingredients:["basmati rice","mixed vegetables","bay leaf","cinnamon","cloves","cumin","ghee","mint"], tags:["one-pot","fragrant"], prepAhead:["Soak rice 20 min","Dice all vegetables"] },
+  { name:"Jeera Rice & Matar Paneer", meal:["lunch","dinner"], region:"North Indian", prep:15, cook:30, ingredients:["basmati rice","cumin","ghee","paneer","peas","onion","tomato","ginger","garlic","cream"], tags:["restaurant-style"], prepAhead:["Cube paneer","Chop onion & tomato","Soak rice"] },
+  { name:"Lemon Rice", meal:["lunch"], region:"South Indian", prep:5, cook:15, ingredients:["rice","lemon","peanuts","mustard seeds","curry leaves","turmeric","green chili","chana dal"], tags:["quick","tangy"], prepAhead:["Cook rice ahead & cool"] },
+  { name:"Curd Rice", meal:["lunch"], region:"South Indian", prep:5, cook:5, ingredients:["rice","curd","mustard seeds","curry leaves","ginger","pomegranate","green chili"], tags:["cooling","comfort"], prepAhead:["Cook rice ahead & cool"] },
+  { name:"Khichdi & Kadhi", meal:["lunch"], region:"Gujarati", prep:10, cook:25, ingredients:["rice","moong dal","turmeric","ghee","curd","besan","cumin","mustard seeds"], tags:["comfort","light"], prepAhead:["Wash rice & dal","Whisk kadhi base"] },
+  { name:"Roti, Sabzi & Dal", meal:["lunch","dinner"], region:"North Indian", prep:15, cook:30, ingredients:["wheat flour","seasonal vegetables","toor dal","onion","tomato","garlic","spices","ghee"], tags:["everyday","balanced"], prepAhead:["Knead dough 30 min ahead","Chop all vegetables","Soak dal"] },
+  { name:"Palak Paneer & Roti", meal:["lunch","dinner"], region:"North Indian", prep:15, cook:30, ingredients:["spinach","paneer","onion","tomato","garlic","ginger","cream","wheat flour","ghee"], tags:["iron-rich"], prepAhead:["Blanch & purée spinach","Cube paneer","Knead dough"] },
+  { name:"Aloo Gobi & Chapati", meal:["lunch","dinner"], region:"North Indian", prep:10, cook:25, ingredients:["potato","cauliflower","onion","tomato","turmeric","cumin","coriander","wheat flour"], tags:["everyday"], prepAhead:["Cut cauliflower florets","Dice potatoes","Knead dough"] },
+  { name:"Bengali Shukto & Rice", meal:["lunch"], region:"Bengali", prep:15, cook:30, ingredients:["bitter gourd","potato","drumstick","raw banana","milk","panch phoron","rice","mustard paste"], tags:["bengali","unique"], prepAhead:["Slice all vegetables","Make mustard paste"] },
+  { name:"Pav Bhaji", meal:["lunch","dinner"], region:"Maharashtrian", prep:15, cook:25, ingredients:["pav buns","potato","cauliflower","peas","capsicum","tomato","butter","pav bhaji masala","onion","lemon"], tags:["street food","indulgent"], prepAhead:["Boil & mash potatoes, cauliflower, peas","Chop onion, tomato, capsicum"] },
+  { name:"Veg Biryani", meal:["lunch","dinner"], region:"Pan-Indian", prep:20, cook:40, ingredients:["basmati rice","mixed vegetables","curd","onion","ginger","garlic","biryani masala","saffron","mint","ghee","fried onions"], tags:["festive","fragrant"], prepAhead:["Soak rice 30 min","Slice & fry onions","Chop all vegetables","Marinate veggies in curd & spices"] },
+  { name:"Masala Dosa & Sambar", meal:["lunch"], region:"South Indian", prep:10, cook:25, ingredients:["dosa batter","potato","onion","mustard seeds","turmeric","curry leaves","toor dal","tamarind","sambar powder"], tags:["crispy"], prepAhead:["Ferment dosa batter overnight","Boil & mash potatoes","Make sambar base"] },
+  { name:"Bhindi Masala & Roti", meal:["lunch","dinner"], region:"North Indian", prep:10, cook:20, ingredients:["okra","onion","tomato","turmeric","cumin","coriander","amchur","wheat flour","ghee"], tags:["everyday"], prepAhead:["Wash, dry & slice okra","Knead dough"] },
+  { name:"Toor Dal, Bhaat & Bhaji", meal:["lunch"], region:"Maharashtrian", prep:10, cook:25, ingredients:["toor dal","rice","seasonal vegetables","peanuts","mustard seeds","curry leaves","coconut","turmeric"], tags:["thali","everyday"], prepAhead:["Soak dal","Chop vegetables","Grate coconut"] },
+
+  // ── SNACK (14) ──
+  { name:"Samosa", meal:["snack"], region:"North Indian", prep:30, cook:20, ingredients:["maida","potato","peas","cumin","coriander","green chili","amchur","oil"], tags:["fried","classic"], prepAhead:["Boil & mash potatoes","Make filling","Prepare dough & shape samosas (freeze)"] },
+  { name:"Pakora / Bhajiya", meal:["snack"], region:"Pan-Indian", prep:10, cook:15, ingredients:["besan","onion","potato","spinach","green chili","ajwain","oil"], tags:["fried","rainy-day"], prepAhead:["Slice onions & potatoes","Mix besan batter"] },
+  { name:"Dhokla", meal:["snack"], region:"Gujarati", prep:10, cook:20, ingredients:["besan","curd","eno","mustard seeds","green chili","curry leaves","sugar","lemon","coriander"], tags:["steamed","light"], prepAhead:["Mix batter 10 min ahead"] },
+  { name:"Khandvi", meal:["snack"], region:"Gujarati", prep:10, cook:20, ingredients:["besan","curd","turmeric","ginger","mustard seeds","sesame seeds","coconut","curry leaves"], tags:["delicate"], prepAhead:["Whisk besan-curd mix smooth"] },
+  { name:"Aloo Tikki", meal:["snack"], region:"North Indian", prep:15, cook:15, ingredients:["potato","peas","bread crumbs","chaat masala","coriander","green chutney","tamarind chutney","oil"], tags:["street food"], prepAhead:["Boil & mash potatoes","Shape tikkis (refrigerate)","Make chutneys"] },
+  { name:"Pani Puri", meal:["snack"], region:"Pan-Indian", prep:20, cook:5, ingredients:["puri shells","potato","chickpeas","onion","mint","coriander","tamarind","green chili","chaat masala"], tags:["street food","fun"], prepAhead:["Boil potato & chickpeas","Make pani (mint water)","Make tamarind chutney"] },
+  { name:"Masala Chai & Biscuits", meal:["snack"], region:"Pan-Indian", prep:2, cook:8, ingredients:["tea leaves","milk","sugar","ginger","cardamom","biscuits"], tags:["everyday","quick"], prepAhead:[] },
+  { name:"Veg Sandwich", meal:["snack"], region:"Pan-Indian", prep:10, cook:5, ingredients:["bread","potato","cucumber","tomato","onion","green chutney","butter","chaat masala"], tags:["quick"], prepAhead:["Make green chutney","Slice vegetables"] },
+  { name:"Sprouts Chaat", meal:["snack"], region:"Pan-Indian", prep:5, cook:5, ingredients:["moong sprouts","onion","tomato","lemon","green chili","coriander","chaat masala","sev"], tags:["healthy","protein"], prepAhead:["Sprout moong beans (2 days)","Steam sprouts"] },
+  { name:"Makhana (Fox Nuts)", meal:["snack"], region:"North Indian", prep:2, cook:8, ingredients:["makhana","ghee","salt","pepper","turmeric"], tags:["healthy","quick"], prepAhead:[] },
+  { name:"Banana Chips", meal:["snack"], region:"South Indian", prep:10, cook:15, ingredients:["raw banana","coconut oil","salt","turmeric"], tags:["crispy"], prepAhead:["Slice bananas thin & uniform"] },
+  { name:"Murukku", meal:["snack"], region:"South Indian", prep:15, cook:20, ingredients:["rice flour","urad dal flour","cumin","sesame seeds","butter","oil"], tags:["crispy","festive"], prepAhead:["Mix dough ahead"] },
+  { name:"Bhel Puri", meal:["snack"], region:"Maharashtrian", prep:10, cook:0, ingredients:["puffed rice","sev","onion","tomato","potato","tamarind chutney","green chutney","lemon"], tags:["street food"], prepAhead:["Boil & dice potato","Make both chutneys","Chop onion & tomato"] },
+  { name:"Paneer Tikka", meal:["snack"], region:"North Indian", prep:15, cook:15, ingredients:["paneer","capsicum","onion","curd","tandoori masala","lemon","kasuri methi"], tags:["grilled","protein"], prepAhead:["Cube paneer & veggies","Marinate in curd-spice mix (2+ hrs)"] },
+
+  // ── DINNER (14) ──
+  { name:"Paneer Butter Masala & Naan", meal:["dinner"], region:"North Indian", prep:15, cook:30, ingredients:["paneer","tomato","cashews","butter","cream","onion","garlic","ginger","garam masala","kasuri methi","naan","maida","curd"], tags:["rich","restaurant-style"], prepAhead:["Soak & blend cashews","Make tomato purée","Cube paneer","Knead naan dough"] },
+  { name:"Dal Makhani & Jeera Rice", meal:["dinner"], region:"North Indian", prep:10, cook:50, ingredients:["urad dal","rajma","butter","cream","tomato","onion","garlic","ginger","garam masala","rice","cumin","ghee"], tags:["rich","slow-cooked"], prepAhead:["Soak urad dal & rajma overnight","Pressure-cook lentils","Chop onion & tomato"] },
+  { name:"Malai Kofta & Roti", meal:["dinner"], region:"North Indian", prep:25, cook:35, ingredients:["paneer","potato","cashews","cream","tomato","onion","garlic","ginger","khoya","wheat flour","ghee"], tags:["festive","rich"], prepAhead:["Boil potatoes","Make & shape koftas (refrigerate)","Blend gravy base","Knead dough"] },
+  { name:"Chana Masala & Kulcha", meal:["dinner"], region:"North Indian", prep:10, cook:30, ingredients:["chickpeas","onion","tomato","ginger","garlic","chole masala","amchur","kulcha","maida","curd"], tags:["protein"], prepAhead:["Soak chickpeas overnight","Pressure-cook chickpeas","Knead kulcha dough"] },
+  { name:"Mushroom Matar & Paratha", meal:["dinner"], region:"North Indian", prep:10, cook:25, ingredients:["mushroom","peas","onion","tomato","garlic","ginger","cream","garam masala","wheat flour","ghee"], tags:["umami"], prepAhead:["Wash & slice mushrooms","Knead dough"] },
+  { name:"Veg Korma & Appam", meal:["dinner"], region:"South Indian", prep:15, cook:30, ingredients:["mixed vegetables","coconut milk","cashews","onion","ginger","garlic","cardamom","cinnamon","rice flour","yeast"], tags:["creamy","mild"], prepAhead:["Chop all vegetables","Grind cashew paste","Prepare appam batter (ferment 6 hrs)"] },
+  { name:"Chhole Bhature", meal:["dinner"], region:"North Indian", prep:15, cook:30, ingredients:["chickpeas","maida","curd","onion","tomato","ginger","garlic","chole masala","oil"], tags:["indulgent"], prepAhead:["Soak chickpeas overnight","Pressure-cook chole","Knead bhature dough (rest 2 hrs)"] },
+  { name:"Aloo Matar & Puri", meal:["dinner"], region:"North Indian", prep:10, cook:25, ingredients:["potato","peas","onion","tomato","cumin","turmeric","garam masala","wheat flour","oil"], tags:["comfort"], prepAhead:["Boil potatoes","Knead puri dough"] },
+  { name:"Begun Bhaja & Dal-Bhaat", meal:["dinner"], region:"Bengali", prep:10, cook:25, ingredients:["eggplant","mustard oil","turmeric","salt","moong dal","rice","panch phoron","ghee"], tags:["bengali","simple"], prepAhead:["Slice eggplant & salt (30 min)","Wash dal & rice"] },
+  { name:"Mixed Veg Curry & Chapati", meal:["dinner","lunch"], region:"Pan-Indian", prep:15, cook:25, ingredients:["mixed vegetables","onion","tomato","garlic","ginger","garam masala","turmeric","wheat flour"], tags:["everyday","balanced"], prepAhead:["Chop all vegetables","Knead dough"] },
+  { name:"Shahi Paneer & Paratha", meal:["dinner"], region:"North Indian", prep:15, cook:30, ingredients:["paneer","onion","tomato","cashews","cream","cardamom","saffron","wheat flour","ghee"], tags:["festive","rich"], prepAhead:["Soak & grind cashews","Cube paneer","Knead dough"] },
+  { name:"Undhiyu & Puri", meal:["dinner"], region:"Gujarati", prep:30, cook:40, ingredients:["surti papdi","brinjal","potato","sweet potato","raw banana","methi muthiya","coconut","peanuts","wheat flour","oil"], tags:["gujarati special","festive"], prepAhead:["Prep all vegetables","Make methi muthiya","Mix masala paste"] },
+  { name:"Veg Fried Rice & Manchurian", meal:["dinner"], region:"Pan-Indian", prep:15, cook:20, ingredients:["rice","cabbage","carrot","capsicum","spring onion","soy sauce","vinegar","cornflour","garlic","ginger","green chili"], tags:["indo-chinese"], prepAhead:["Cook rice ahead & cool","Finely chop all vegetables","Shape manchurian balls (refrigerate)"] },
+  { name:"Masoor Dal & Rice", meal:["dinner","lunch"], region:"Bengali", prep:5, cook:20, ingredients:["masoor dal","onion","tomato","garlic","turmeric","cumin","mustard oil","rice","ghee"], tags:["quick","comfort"], prepAhead:["Wash dal (no soaking needed)","Chop onion & tomato"] },
+
+  // ── MEXICAN (12) ──
+  { name:"Bean & Cheese Burrito", meal:["lunch","dinner"], region:"Mexican", prep:10, cook:15, ingredients:["flour tortilla","black beans","cheese","rice","salsa","sour cream","cumin","garlic","onion","coriander"], tags:["hearty","filling"], prepAhead:["Cook & season black beans","Cook rice","Make salsa"] },
+  { name:"Veggie Quesadilla", meal:["lunch","snack"], region:"Mexican", prep:5, cook:10, ingredients:["flour tortilla","cheese","capsicum","onion","corn","jalapeño","cumin","sour cream"], tags:["quick","cheesy"], prepAhead:["Dice capsicum, onion, jalapeño"] },
+  { name:"Guacamole & Chips", meal:["snack"], region:"Mexican", prep:10, cook:0, ingredients:["avocado","onion","tomato","lime","coriander","jalapeño","salt","tortilla chips"], tags:["fresh","quick"], prepAhead:["Dice onion, tomato, jalapeño"] },
+  { name:"Mexican Rice Bowl", meal:["lunch","dinner"], region:"Mexican", prep:10, cook:20, ingredients:["rice","black beans","corn","avocado","tomato","lime","coriander","cumin","chili powder","sour cream","lettuce"], tags:["bowl","balanced"], prepAhead:["Cook rice & beans","Roast corn","Chop toppings"] },
+  { name:"Enchiladas Verdes", meal:["dinner"], region:"Mexican", prep:15, cook:25, ingredients:["corn tortilla","cheese","tomatillo","jalapeño","onion","garlic","sour cream","coriander","cumin"], tags:["baked","saucy"], prepAhead:["Roast & blend tomatillo sauce","Grate cheese"] },
+  { name:"Black Bean Tacos", meal:["lunch","dinner"], region:"Mexican", prep:10, cook:10, ingredients:["corn tortilla","black beans","avocado","onion","tomato","coriander","lime","cumin","chili powder","lettuce"], tags:["street food","quick"], prepAhead:["Cook & season beans","Chop toppings"] },
+  { name:"Elote (Street Corn)", meal:["snack"], region:"Mexican", prep:5, cook:10, ingredients:["corn on cob","mayo","cheese","chili powder","lime","coriander","butter"], tags:["street food","grilled"], prepAhead:[] },
+  { name:"Chilaquiles", meal:["breakfast"], region:"Mexican", prep:10, cook:15, ingredients:["corn tortilla","tomatillo","jalapeño","onion","cheese","sour cream","coriander","eggs substitute or beans","oil"], tags:["hearty","crunchy"], prepAhead:["Make tomatillo salsa","Cut & fry tortilla strips"] },
+  { name:"Veggie Fajitas", meal:["dinner"], region:"Mexican", prep:10, cook:15, ingredients:["capsicum","onion","mushroom","zucchini","flour tortilla","cumin","chili powder","lime","sour cream","cheese","coriander"], tags:["sizzling","fun"], prepAhead:["Slice all vegetables into strips"] },
+  { name:"Mexican Bean Soup", meal:["lunch","dinner"], region:"Mexican", prep:10, cook:25, ingredients:["black beans","tomato","onion","garlic","cumin","chili powder","coriander","lime","tortilla chips","sour cream"], tags:["soup","comfort"], prepAhead:["Soak beans overnight","Chop onion, tomato, garlic"] },
+  { name:"Huevos Rancheros (Veg)", meal:["breakfast"], region:"Mexican", prep:10, cook:15, ingredients:["corn tortilla","black beans","tomato","onion","jalapeño","cheese","avocado","coriander","cumin","oil"], tags:["hearty"], prepAhead:["Cook black beans","Make ranchero sauce"] },
+  { name:"Nachos Supreme", meal:["snack"], region:"Mexican", prep:10, cook:10, ingredients:["tortilla chips","cheese","black beans","jalapeño","onion","tomato","sour cream","guacamole","salsa"], tags:["indulgent","sharing"], prepAhead:["Make guacamole & salsa","Cook beans"] },
+
+  // ── THAI (10) ──
+  { name:"Thai Green Curry", meal:["dinner","lunch"], region:"Thai", prep:10, cook:25, ingredients:["green curry paste","coconut milk","tofu","brinjal","bamboo shoots","thai basil","lime leaves","rice","palm sugar","soy sauce"], tags:["aromatic","creamy"], prepAhead:["Press & cube tofu","Slice vegetables","Cook rice"] },
+  { name:"Pad Thai (Veg)", meal:["lunch","dinner"], region:"Thai", prep:10, cook:15, ingredients:["rice noodles","tofu","peanuts","bean sprouts","spring onion","tamarind","soy sauce","lime","sugar","garlic","chili flakes"], tags:["noodles","classic"], prepAhead:["Soak rice noodles","Press & cube tofu","Crush peanuts","Mix sauce (tamarind+soy+sugar)"] },
+  { name:"Thai Red Curry", meal:["dinner"], region:"Thai", prep:10, cook:25, ingredients:["red curry paste","coconut milk","tofu","capsicum","bamboo shoots","thai basil","lime leaves","rice","sugar"], tags:["spicy","creamy"], prepAhead:["Press & cube tofu","Slice vegetables","Cook rice"] },
+  { name:"Tom Yum Soup (Veg)", meal:["lunch","dinner"], region:"Thai", prep:10, cook:15, ingredients:["mushroom","tomato","lemongrass","galangal","lime leaves","lime","chili","coriander","tofu","soy sauce"], tags:["soup","tangy"], prepAhead:["Slice mushrooms","Bruise lemongrass","Cube tofu"] },
+  { name:"Thai Fried Rice", meal:["lunch","dinner"], region:"Thai", prep:5, cook:10, ingredients:["rice","tofu","capsicum","onion","garlic","soy sauce","thai basil","lime","chili","spring onion","cucumber"], tags:["quick","wok"], prepAhead:["Cook rice ahead & cool","Dice vegetables","Cube tofu"] },
+  { name:"Som Tam (Papaya Salad)", meal:["snack","lunch"], region:"Thai", prep:15, cook:0, ingredients:["raw papaya","tomato","peanuts","green beans","lime","chili","palm sugar","soy sauce","garlic"], tags:["fresh","spicy"], prepAhead:["Shred papaya","Roast peanuts"] },
+  { name:"Thai Pumpkin Soup", meal:["lunch","dinner"], region:"Thai", prep:10, cook:25, ingredients:["pumpkin","coconut milk","red curry paste","lemongrass","lime leaves","ginger","garlic","coriander","lime"], tags:["soup","creamy"], prepAhead:["Peel & cube pumpkin"] },
+  { name:"Mango Sticky Rice", meal:["snack"], region:"Thai", prep:10, cook:25, ingredients:["sticky rice","mango","coconut milk","sugar","salt","sesame seeds"], tags:["dessert","sweet"], prepAhead:["Soak sticky rice (4 hrs or overnight)"] },
+  { name:"Spring Rolls (Fresh)", meal:["snack"], region:"Thai", prep:20, cook:0, ingredients:["rice paper","carrot","cucumber","avocado","lettuce","mint","rice noodles","peanut sauce","soy sauce"], tags:["fresh","light"], prepAhead:["Julienne all vegetables","Cook rice noodles","Make peanut sauce"] },
+  { name:"Massaman Curry (Veg)", meal:["dinner"], region:"Thai", prep:10, cook:30, ingredients:["potato","onion","peanuts","coconut milk","massaman curry paste","tamarind","palm sugar","tofu","bay leaf","cinnamon"], tags:["mild","rich"], prepAhead:["Peel & cube potato","Press & cube tofu","Roast peanuts"] },
+
+  // ── ITALIAN (12) ──
+  { name:"Margherita Pizza", meal:["dinner","lunch"], region:"Italian", prep:20, cook:15, ingredients:["pizza dough","tomato sauce","mozzarella","fresh basil","olive oil","salt","oregano"], tags:["classic","baked"], prepAhead:["Prepare & proof dough (2+ hrs or overnight)","Make tomato sauce"] },
+  { name:"Pasta Aglio e Olio", meal:["dinner","lunch"], region:"Italian", prep:5, cook:12, ingredients:["spaghetti","garlic","olive oil","chili flakes","parsley","parmesan"], tags:["quick","simple"], prepAhead:["Slice garlic","Chop parsley"] },
+  { name:"Penne Arrabbiata", meal:["lunch","dinner"], region:"Italian", prep:5, cook:20, ingredients:["penne","tomato","garlic","chili flakes","olive oil","basil","parmesan","onion"], tags:["spicy","classic"], prepAhead:["Chop tomato, onion, garlic"] },
+  { name:"Mushroom Risotto", meal:["dinner"], region:"Italian", prep:10, cook:30, ingredients:["arborio rice","mushroom","onion","garlic","vegetable broth","parmesan","butter","white wine","thyme"], tags:["creamy","elegant"], prepAhead:["Slice mushrooms","Dice onion","Warm broth"] },
+  { name:"Caprese Salad", meal:["snack","lunch"], region:"Italian", prep:5, cook:0, ingredients:["mozzarella","tomato","fresh basil","olive oil","balsamic vinegar","salt","pepper"], tags:["fresh","quick"], prepAhead:["Slice tomato & mozzarella"] },
+  { name:"Bruschetta", meal:["snack"], region:"Italian", prep:10, cook:5, ingredients:["bread","tomato","garlic","fresh basil","olive oil","balsamic vinegar","salt"], tags:["appetizer","quick"], prepAhead:["Dice tomato","Mix tomato-basil topping"] },
+  { name:"Minestrone Soup", meal:["lunch","dinner"], region:"Italian", prep:15, cook:30, ingredients:["kidney beans","pasta","carrot","celery","tomato","onion","garlic","zucchini","spinach","olive oil","parmesan"], tags:["soup","hearty"], prepAhead:["Soak kidney beans","Dice all vegetables"] },
+  { name:"Gnocchi in Tomato Sauce", meal:["dinner"], region:"Italian", prep:10, cook:15, ingredients:["potato gnocchi","tomato","garlic","basil","olive oil","parmesan","onion","oregano"], tags:["comfort"], prepAhead:["Make gnocchi from scratch (boil potatoes)"] },
+  { name:"Focaccia Bread", meal:["snack","breakfast"], region:"Italian", prep:15, cook:25, ingredients:["flour","olive oil","rosemary","salt","yeast","garlic","cherry tomato"], tags:["baked","herby"], prepAhead:["Make dough & proof (2+ hrs or overnight)"] },
+  { name:"Pesto Pasta", meal:["lunch","dinner"], region:"Italian", prep:10, cook:12, ingredients:["pasta","basil","pine nuts","parmesan","garlic","olive oil","salt","pepper"], tags:["fragrant","quick"], prepAhead:["Blend pesto sauce (stores well)"] },
+  { name:"Eggplant Parmigiana", meal:["dinner"], region:"Italian", prep:15, cook:35, ingredients:["eggplant","tomato sauce","mozzarella","parmesan","basil","olive oil","bread crumbs","garlic"], tags:["baked","hearty"], prepAhead:["Slice & salt eggplant (30 min)","Make tomato sauce","Bread eggplant slices"] },
+  { name:"Lasagna (Veg)", meal:["dinner"], region:"Italian", prep:25, cook:45, ingredients:["lasagna sheets","spinach","ricotta","mozzarella","tomato sauce","onion","garlic","basil","béchamel sauce","parmesan"], tags:["baked","festive"], prepAhead:["Make tomato sauce","Make béchamel","Blanch spinach","Assemble layers (refrigerate overnight)"] },
+
+  // ── CHINESE / EAST ASIAN (10) ──
+  { name:"Veg Hakka Noodles", meal:["lunch","dinner"], region:"Chinese", prep:10, cook:10, ingredients:["noodles","cabbage","carrot","capsicum","spring onion","soy sauce","vinegar","garlic","ginger","green chili","oil"], tags:["wok","quick"], prepAhead:["Boil noodles","Julienne all vegetables"] },
+  { name:"Veg Dim Sum", meal:["snack"], region:"Chinese", prep:25, cook:15, ingredients:["maida","cabbage","carrot","mushroom","spring onion","soy sauce","ginger","sesame oil","cornflour"], tags:["steamed","delicate"], prepAhead:["Finely chop all filling veggies","Make wrappers","Shape dumplings (freeze)"] },
+  { name:"Mapo Tofu", meal:["dinner"], region:"Chinese", prep:10, cook:15, ingredients:["tofu","garlic","ginger","soy sauce","chili bean paste","spring onion","sichuan pepper","cornflour","sesame oil","rice"], tags:["spicy","sichuan"], prepAhead:["Press & cube tofu","Mince garlic & ginger"] },
+  { name:"Hot & Sour Soup", meal:["snack","dinner"], region:"Chinese", prep:10, cook:15, ingredients:["tofu","mushroom","bamboo shoots","carrot","vinegar","soy sauce","pepper","cornflour","spring onion","sesame oil"], tags:["soup","tangy"], prepAhead:["Julienne all vegetables","Cube tofu"] },
+  { name:"Veg Spring Rolls (Fried)", meal:["snack"], region:"Chinese", prep:20, cook:10, ingredients:["spring roll sheets","cabbage","carrot","mushroom","spring onion","soy sauce","ginger","garlic","oil"], tags:["crispy","fried"], prepAhead:["Finely chop filling veggies","Roll spring rolls (freeze)"] },
+  { name:"Kung Pao Tofu", meal:["dinner"], region:"Chinese", prep:10, cook:15, ingredients:["tofu","peanuts","capsicum","onion","garlic","ginger","soy sauce","vinegar","chili","cornflour","spring onion"], tags:["spicy","classic"], prepAhead:["Press & cube tofu","Dice vegetables","Mix sauce"] },
+  { name:"Vegetable Sushi Rolls", meal:["lunch","snack"], region:"Japanese", prep:25, cook:15, ingredients:["sushi rice","nori","avocado","cucumber","carrot","rice vinegar","sugar","soy sauce","wasabi","pickled ginger"], tags:["fresh","elegant"], prepAhead:["Cook & season sushi rice","Julienne all vegetables","Slice avocado"] },
+  { name:"Miso Soup", meal:["snack","dinner"], region:"Japanese", prep:5, cook:10, ingredients:["miso paste","tofu","wakame seaweed","spring onion","dashi stock","mushroom"], tags:["soup","light"], prepAhead:["Cube tofu","Soak wakame"] },
+  { name:"Bibimbap (Veg)", meal:["lunch","dinner"], region:"Korean", prep:20, cook:20, ingredients:["rice","spinach","carrot","zucchini","mushroom","bean sprouts","gochujang","sesame oil","garlic","soy sauce","sesame seeds"], tags:["bowl","colorful"], prepAhead:["Cook rice","Blanch & season each vegetable separately","Prepare gochujang sauce"] },
+  { name:"Japchae (Glass Noodles)", meal:["dinner"], region:"Korean", prep:15, cook:15, ingredients:["glass noodles","spinach","carrot","mushroom","capsicum","onion","soy sauce","sesame oil","garlic","sugar","sesame seeds"], tags:["sweet-savory","festive"], prepAhead:["Soak glass noodles","Julienne all vegetables"] },
+
+  // ── MIDDLE EASTERN / MEDITERRANEAN (8) ──
+  { name:"Falafel Wrap", meal:["lunch","snack"], region:"Middle Eastern", prep:20, cook:15, ingredients:["chickpeas","onion","garlic","coriander","cumin","parsley","pita bread","tahini","lettuce","tomato","lemon"], tags:["protein","street food"], prepAhead:["Soak chickpeas overnight","Blend falafel mix","Shape patties (refrigerate or freeze)","Make tahini sauce"] },
+  { name:"Hummus & Pita", meal:["snack"], region:"Middle Eastern", prep:10, cook:0, ingredients:["chickpeas","tahini","lemon","garlic","olive oil","cumin","pita bread","paprika"], tags:["dip","protein"], prepAhead:["Cook chickpeas (or use canned)","Blend hummus (stores 5 days)"] },
+  { name:"Shakshuka (Veg)", meal:["breakfast","dinner"], region:"Middle Eastern", prep:10, cook:20, ingredients:["tomato","capsicum","onion","garlic","cumin","paprika","chili flakes","coriander","bread","olive oil"], tags:["saucy","one-pan"], prepAhead:["Chop all vegetables","Make tomato-pepper base (refrigerate)"] },
+  { name:"Tabbouleh", meal:["snack","lunch"], region:"Middle Eastern", prep:15, cook:0, ingredients:["bulgur wheat","parsley","mint","tomato","onion","lemon","olive oil","salt","pepper"], tags:["fresh","salad"], prepAhead:["Soak bulgur wheat","Finely chop parsley, mint, tomato"] },
+  { name:"Stuffed Grape Leaves", meal:["snack"], region:"Middle Eastern", prep:25, cook:30, ingredients:["grape leaves","rice","onion","mint","parsley","lemon","olive oil","pine nuts","tomato"], tags:["elegant","herby"], prepAhead:["Make rice filling","Roll & stuff leaves (refrigerate)"] },
+  { name:"Greek Salad", meal:["snack","lunch"], region:"Mediterranean", prep:10, cook:0, ingredients:["cucumber","tomato","onion","feta cheese","olives","olive oil","oregano","lemon","capsicum"], tags:["fresh","quick"], prepAhead:["Chop vegetables","Cube feta"] },
+  { name:"Spanakopita", meal:["snack","lunch"], region:"Mediterranean", prep:20, cook:30, ingredients:["spinach","feta cheese","onion","garlic","phyllo pastry","olive oil","dill","lemon","pepper"], tags:["baked","flaky"], prepAhead:["Wilt & squeeze spinach","Mix filling","Assemble layers (refrigerate overnight)"] },
+  { name:"Baba Ganoush & Bread", meal:["snack"], region:"Middle Eastern", prep:10, cook:20, ingredients:["eggplant","tahini","garlic","lemon","olive oil","cumin","parsley","pita bread"], tags:["smoky","dip"], prepAhead:["Roast eggplant (can do day before)","Blend dip (stores well)"] },
+];
+
+/* ═══════════════════════════════════════════════════════
+   CONSTANTS & STATE
+   ═══════════════════════════════════════════════════════ */
+const MEAL_SLOTS  = ["breakfast","lunch","snack","dinner"];
+const MEAL_LABELS = { breakfast:"🌅 Breakfast", lunch:"☀️ Lunch", snack:"🍵 Snack", dinner:"🌙 Dinner" };
+const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+let currentWeekStart = getMonday(new Date());
+let mealPlan = {};  // { "2026-04-13": { breakfast:"Poha", lunch:"…" } }
+
+/* ═══════════════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════════════ */
+window.addEventListener("DOMContentLoaded", () => {
+  loadFromLocalStorage();
+  loadPantry();
+  renderWeek();
+  renderRecipes();
+  setupTabs();
+});
+
+/* ═══════════════════════════════════════════════════════
+   TABS
+   ═══════════════════════════════════════════════════════ */
+function setupTabs() {
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      document.querySelectorAll("section").forEach(s => s.classList.remove("active"));
+      document.getElementById("section-" + btn.dataset.tab).classList.add("active");
+      if (btn.dataset.tab === "grocery") renderGrocery();
+      if (btn.dataset.tab === "prep") renderWeekendPrep();
+      if (btn.dataset.tab === "pantry") { renderPantry(); renderIngredientLookup(); }
+      if (btn.dataset.tab === "roulette") prepareRoulette();
+    });
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   WEEK NAVIGATION
+   ═══════════════════════════════════════════════════════ */
+function getMonday(d) {
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+  date.setDate(diff);
+  date.setHours(0,0,0,0);
+  return date;
+}
+
+function formatDate(d) { return d.toISOString().slice(0,10); }
+
+function changeWeek(dir) {
+  currentWeekStart.setDate(currentWeekStart.getDate() + dir * 7);
+  renderWeek();
+}
+
+function goToCurrentWeek() {
+  currentWeekStart = getMonday(new Date());
+  renderWeek();
+}
+
+function getWeekDates() {
+  const dates = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(currentWeekStart);
+    d.setDate(d.getDate() + i);
+    dates.push(d);
+  }
+  return dates;
+}
+
+/* ═══════════════════════════════════════════════════════
+   RENDER WEEK GRID
+   ═══════════════════════════════════════════════════════ */
+function renderWeek() {
+  const dates = getWeekDates();
+  const endDate = dates[6];
+  const fmt = d => d.toLocaleDateString("en-IN", { month:"short", day:"numeric" });
+  document.getElementById("weekLabel").textContent =
+    `${fmt(currentWeekStart)} — ${fmt(endDate)}, ${endDate.getFullYear()}`;
+
+  const grid = document.getElementById("weekGrid");
+  const todayStr = formatDate(new Date());
+  let html = '<div class="header"></div>';
+
+  // Day headers
+  dates.forEach((d, i) => {
+    const cls = formatDate(d) === todayStr ? "header today" : "header";
+    html += `<div class="${cls}">${DAYS[i]}<br>${d.getDate()}</div>`;
+  });
+
+  // Meal rows
+  MEAL_SLOTS.forEach(slot => {
+    html += `<div class="meal-label">${MEAL_LABELS[slot]}</div>`;
+    dates.forEach(d => {
+      const key = formatDate(d);
+      const dish = mealPlan[key]?.[slot] || "";
+      if (dish) {
+        const recipe = RECIPES.find(r => r.name === dish);
+        const timeLabel = recipe ? `${recipe.prep + recipe.cook}m` : "";
+        html += `<div class="meal-cell" onclick="openPicker('${key}','${slot}')">
+          <button class="clear-btn" onclick="event.stopPropagation();clearMeal('${key}','${slot}')" title="Remove">✕</button>
+          <div class="dish-name">${dish}</div>
+          ${timeLabel ? `<div class="prep-badge"><span>⏱ ${timeLabel}</span></div>` : ""}
+          </div>`;
+      } else {
+        html += `<div class="meal-cell empty" onclick="openPicker('${key}','${slot}')">+ add</div>`;
+      }
+    });
+  });
+
+  grid.innerHTML = html;
+}
+
+/* ═══════════════════════════════════════════════════════
+   DISH PICKER MODAL
+   ═══════════════════════════════════════════════════════ */
+let pickerDate = "", pickerSlot = "";
+
+function openPicker(date, slot) {
+  pickerDate = date;
+  pickerSlot = slot;
+  const dayLabel = new Date(date).toLocaleDateString("en-IN", { weekday:"short", month:"short", day:"numeric" });
+  document.getElementById("pickModalTitle").textContent = `Pick ${MEAL_LABELS[slot]} — ${dayLabel}`;
+  document.getElementById("pickSearch").value = "";
+  renderPickList();
+  document.getElementById("pickModal").classList.add("show");
+  document.getElementById("pickSearch").focus();
+}
+
+function closeModal() {
+  document.getElementById("pickModal").classList.remove("show");
+}
+
+function renderPickList(filter = "") {
+  const list = document.getElementById("pickList");
+  const filtered = RECIPES.filter(r => {
+    if (!r.meal.includes(pickerSlot)) return false;
+    if (filter && !r.name.toLowerCase().includes(filter.toLowerCase())) return false;
+    return true;
+  });
+  list.innerHTML = filtered.length
+    ? filtered.map(r => `
+        <div class="pick-item" onclick="selectDish('${r.name.replace(/'/g,"\\'")}')">
+          <h4>${r.name} <span style="font-size:.75rem;color:#888;font-weight:400">⏱ ${r.prep+r.cook}m</span></h4>
+          <p>${r.region} · ${r.tags.join(", ")} · prep ${r.prep}m + cook ${r.cook}m</p>
+        </div>`).join("")
+    : '<p style="padding:20px;text-align:center;color:#999;">No dishes found for this meal slot.</p>';
+}
+
+function filterPickList() {
+  renderPickList(document.getElementById("pickSearch").value);
+}
+
+function selectDish(name) {
+  if (!mealPlan[pickerDate]) mealPlan[pickerDate] = {};
+  mealPlan[pickerDate][pickerSlot] = name;
+  saveToLocalStorage();
+  closeModal();
+  renderWeek();
+}
+
+function clearMeal(date, slot) {
+  if (mealPlan[date]) {
+    delete mealPlan[date][slot];
+    if (!Object.keys(mealPlan[date]).length) delete mealPlan[date];
+  }
+  saveToLocalStorage();
+  renderWeek();
+}
+
+function randomPick() {
+  const eligible = RECIPES.filter(r => r.meal.includes(pickerSlot));
+  if (eligible.length) selectDish(eligible[Math.floor(Math.random() * eligible.length)].name);
+}
+
+/* ═══════════════════════════════════════════════════════
+   AUTO-FILL & CLEAR WEEK
+   ═══════════════════════════════════════════════════════ */
+function autoFillWeek() {
+  getWeekDates().forEach(d => {
+    const key = formatDate(d);
+    if (!mealPlan[key]) mealPlan[key] = {};
+    MEAL_SLOTS.forEach(slot => {
+      if (!mealPlan[key][slot]) {
+        const eligible = RECIPES.filter(r => r.meal.includes(slot));
+        if (eligible.length) mealPlan[key][slot] = eligible[Math.floor(Math.random() * eligible.length)].name;
+      }
+    });
+  });
+  saveToLocalStorage();
+  renderWeek();
+}
+
+function clearWeek() {
+  if (!confirm("Clear all meals for this week?")) return;
+  getWeekDates().forEach(d => delete mealPlan[formatDate(d)]);
+  saveToLocalStorage();
+  renderWeek();
+}
+
+/* ═══════════════════════════════════════════════════════
+   RECIPE BROWSER
+   ═══════════════════════════════════════════════════════ */
+function renderRecipes() {
+  const mealF   = document.getElementById("filterMeal").value;
+  const regionF = document.getElementById("filterRegion").value;
+  const search  = document.getElementById("filterSearch").value.toLowerCase();
+
+  const filtered = RECIPES.filter(r => {
+    if (mealF && !r.meal.includes(mealF)) return false;
+    if (regionF && r.region !== regionF) return false;
+    if (search && !r.name.toLowerCase().includes(search) && !r.ingredients.some(i => i.includes(search))) return false;
+    return true;
+  });
+
+  document.getElementById("recipeGrid").innerHTML = filtered.map(r => `
+    <div class="recipe-card">
+      <h3>${r.name}</h3>
+      <div class="meta">${r.region} · ${r.meal.map(m => MEAL_LABELS[m]).join(", ")} · <strong>⏱ ${r.prep+r.cook}m</strong> (prep ${r.prep}m + cook ${r.cook}m)</div>
+      <div>${r.tags.map(t => `<span class="recipe-tag">${t}</span>`).join("")}</div>
+      <div class="ingredients" style="margin-top:8px"><strong>Ingredients:</strong> ${r.ingredients.join(", ")}</div>
+      ${r.prepAhead && r.prepAhead.length ? `<div style="margin-top:6px;font-size:.78rem;color:var(--accent)"><strong>🧑‍🍳 Prep ahead:</strong> ${r.prepAhead.join(" · ")}</div>` : ""}
+    </div>`).join("");
+}
+
+/* ═══════════════════════════════════════════════════════
+   GROCERY LIST
+   ═══════════════════════════════════════════════════════ */
+const GROCERY_CATEGORIES = {
+  "🥬 Vegetables":["potato","onion","tomato","capsicum","cauliflower","peas","spinach","okra","mushroom","cabbage","carrot","cucumber","drumstick","bitter gourd","raw banana","brinjal","eggplant","sweet potato","spring onion","methi leaves","seasonal vegetables","mixed vegetables","zucchini","celery","lettuce","bean sprouts","bamboo shoots","corn","corn on cob","raw papaya","green beans","cherry tomato","pumpkin"],
+  "🌿 Fruits & Herbs":["lemon","lime","coriander","mint","ginger","garlic","green chili","curry leaves","pomegranate","thai basil","basil","fresh basil","parsley","dill","rosemary","thyme","lemongrass","galangal","mango","avocado","lime leaves"],
+  "🥛 Dairy & Cheese":["milk","curd","paneer","cream","butter","ghee","khoya","cheese","mozzarella","parmesan","feta cheese","ricotta","sour cream","béchamel sauce"],
+  "🫘 Lentils & Beans":["toor dal","moong dal","urad dal","chana dal","masoor dal","kidney beans","chickpeas","rajma","moong sprouts","fenugreek","black beans"],
+  "🌾 Grains & Flour":["rice","basmati rice","sushi rice","sticky rice","arborio rice","wheat flour","maida","flour","semolina","besan","rice flour","cornflour","vermicelli","flattened rice","bread","pav buns","naan","kulcha","sabudana","puffed rice","pasta","spaghetti","penne","lasagna sheets","noodles","rice noodles","glass noodles","bulgur wheat","pizza dough","potato gnocchi"],
+  "🌶️ Spices & Masala":["cumin","mustard seeds","turmeric","red chili","garam masala","chole masala","sambar powder","pav bhaji masala","biryani masala","tandoori masala","chaat masala","amchur","ajwain","panch phoron","kasuri methi","cardamom","cinnamon","cloves","bay leaf","pepper","saffron","spices","bisi bele bath powder","urad dal flour","chili flakes","chili powder","oregano","paprika","sichuan pepper","green curry paste","red curry paste","massaman curry paste","chili bean paste","gochujang"],
+  "🥜 Dry Fruits & Nuts":["cashews","peanuts","coconut","sesame seeds","makhana","fried onions","pine nuts","sesame oil"],
+  "🫙 Condiments & Sauces":["tamarind","soy sauce","vinegar","balsamic vinegar","pickle","green chutney","tamarind chutney","sugar","palm sugar","salt","oil","olive oil","coconut oil","mustard oil","coconut milk","mustard paste","tomato sauce","salsa","guacamole","tahini","peanut sauce","mayo","miso paste","rice vinegar","wasabi","white wine"],
+  "🧀 International Staples":["tofu","flour tortilla","corn tortilla","tortilla chips","pita bread","nori","wakame seaweed","rice paper","spring roll sheets","phyllo pastry","grape leaves","olives","pickled ginger","dashi stock","vegetable broth"],
+  "🍪 Snack Items":["sev","puri shells","biscuits","bread crumbs","tea leaves"],
+  "📦 Other":["idli batter","dosa batter","eno","yeast","surti papdi","methi muthiya","jalapeño","tomatillo","eggs substitute or beans"]
+};
+
+function renderGrocery() {
+  const ingredientMap = {};
+  getWeekDates().forEach(d => {
+    const key = formatDate(d);
+    if (!mealPlan[key]) return;
+    MEAL_SLOTS.forEach(slot => {
+      const dishName = mealPlan[key][slot];
+      if (!dishName) return;
+      const recipe = RECIPES.find(r => r.name === dishName);
+      if (!recipe) return;
+      recipe.ingredients.forEach(ing => { ingredientMap[ing] = (ingredientMap[ing] || 0) + 1; });
+    });
+  });
+
+  const container = document.getElementById("groceryList");
+  if (!Object.keys(ingredientMap).length) {
+    container.innerHTML = '<p style="color:#999;text-align:center;padding:30px;">No meals planned this week. Go to the Planner tab to add dishes!</p>';
+    return;
+  }
+
+  let html = "";
+  const categorized = new Set();
+
+  for (const [category, items] of Object.entries(GROCERY_CATEGORIES)) {
+    const matched = items.filter(i => ingredientMap[i]);
+    if (!matched.length) continue;
+    matched.forEach(i => categorized.add(i));
+    html += `<div class="grocery-category"><h3>${category}</h3><ul>`;
+    matched.forEach(i => {
+      const freq = ingredientMap[i] > 1 ? ` <span style="color:#999;font-size:.75rem">(×${ingredientMap[i]} dishes)</span>` : "";
+      html += `<li>${i}${freq}</li>`;
+    });
+    html += "</ul></div>";
+  }
+
+  // Uncategorized
+  const uncategorized = Object.keys(ingredientMap).filter(i => !categorized.has(i));
+  if (uncategorized.length) {
+    html += '<div class="grocery-category"><h3>🏷️ Other</h3><ul>';
+    uncategorized.forEach(i => { html += `<li>${i}</li>`; });
+    html += "</ul></div>";
+  }
+
+  container.innerHTML = html;
+}
+
+/* ═══════════════════════════════════════════════════════
+   PERSISTENCE — localStorage + JSON export/import
+   ═══════════════════════════════════════════════════════ */
+function saveToLocalStorage() {
+  try { localStorage.setItem("familyMealPlan", JSON.stringify(mealPlan)); } catch(e) { /* quota */ }
+}
+
+function loadFromLocalStorage() {
+  try {
+    const saved = localStorage.getItem("familyMealPlan");
+    if (saved) mealPlan = JSON.parse(saved);
+  } catch(e) { /* corrupt */ }
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(mealPlan, null, 2)], { type:"application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `meal-plan-${formatDate(new Date())}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      mealPlan = JSON.parse(e.target.result);
+      saveToLocalStorage();
+      renderWeek();
+      alert("Meal plan loaded successfully! 🎉");
+    } catch { alert("Invalid file format. Please select a valid JSON file."); }
+  };
+  reader.readAsText(file);
+  event.target.value = "";
+}
+
+/* ═══════════════════════════════════════════════════════
+   WEEKEND PREP GUIDE
+   ═══════════════════════════════════════════════════════ */
+function renderWeekendPrep() {
+  const dates = getWeekDates();
+  const weekdayDates = dates.slice(0, 5); // Mon-Fri
+  const allDates = dates;
+
+  // Collect all planned dishes for the week with their prep tasks
+  const prepTasks = { overnight:[], saturday:[], sunday:[], morning:[] };
+  const dishesPlanned = [];
+  let totalPrepMin = 0, totalCookMin = 0;
+
+  allDates.forEach((d, dayIdx) => {
+    const key = formatDate(d);
+    if (!mealPlan[key]) return;
+    MEAL_SLOTS.forEach(slot => {
+      const dishName = mealPlan[key][slot];
+      if (!dishName) return;
+      const recipe = RECIPES.find(r => r.name === dishName);
+      if (!recipe) return;
+      dishesPlanned.push({ name: dishName, day: DAYS[dayIdx], slot, recipe });
+      totalPrepMin += recipe.prep;
+      totalCookMin += recipe.cook;
+      if (!recipe.prepAhead || !recipe.prepAhead.length) return;
+
+      recipe.prepAhead.forEach(task => {
+        const tl = task.toLowerCase();
+        const entry = { task, dish: dishName, day: DAYS[dayIdx], slot: MEAL_LABELS[slot] };
+        if (tl.includes("overnight") || tl.includes("ferment") || tl.includes("soak") && (tl.includes("overnight") || tl.includes("hrs"))) {
+          prepTasks.overnight.push(entry);
+        } else if (tl.includes("freeze") || tl.includes("refrigerate") || tl.includes("marinate") || tl.includes("proof") || tl.includes("shape") || tl.includes("assemble") || tl.includes("blend") || tl.includes("grind") || tl.includes("purée") || tl.includes("puree") || tl.includes("make") || tl.includes("roast") || tl.includes("boil") || tl.includes("cook") || tl.includes("pressure")) {
+          prepTasks.saturday.push(entry);
+        } else {
+          prepTasks.sunday.push(entry);
+        }
+      });
+    });
+  });
+
+  // Summary
+  const summaryEl = document.getElementById("prepSummary");
+  if (!dishesPlanned.length) {
+    summaryEl.innerHTML = '<p style="color:#999;text-align:center;padding:20px;">No meals planned this week. Add dishes to see your prep guide!</p>';
+    document.getElementById("prepContent").innerHTML = "";
+    return;
+  }
+
+  const weekdayDishes = dishesPlanned.filter(d => ["Mon","Tue","Wed","Thu","Fri"].includes(d.day));
+  const weekdayPrepSaved = weekdayDishes.reduce((sum, d) => sum + d.recipe.prep, 0);
+
+  summaryEl.innerHTML = `
+    <div class="prep-summary">
+      <div>📊 <span class="stat">${dishesPlanned.length}</span> dishes planned</div>
+      <div>⏱ Total: <span class="stat">${totalPrepMin}m prep</span> + <span class="stat">${totalCookMin}m cook</span></div>
+      <div>💡 Weekend prep saves ~<span class="stat">${Math.round(weekdayPrepSaved * 0.6)}m</span> on weekday mornings</div>
+    </div>`;
+
+  // Dedup tasks
+  const dedup = (arr) => {
+    const seen = new Set();
+    return arr.filter(e => {
+      const k = e.task + "|" + e.dish;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  };
+
+  let html = "";
+
+  const sections = [
+    { key:"overnight", title:"🌙 Friday Night — Soaking & Fermenting", desc:"Start these the night before your prep day" },
+    { key:"saturday", title:"🔪 Saturday — Big Batch Cooking & Prep", desc:"Boil, blend, shape, and batch-cook bases" },
+    { key:"sunday", title:"🥗 Sunday — Chopping & Final Prep", desc:"Chop vegetables, knead dough, portion out ingredients" },
+  ];
+
+  sections.forEach(sec => {
+    const tasks = dedup(prepTasks[sec.key]);
+    if (!tasks.length) return;
+    html += `<div class="prep-section"><h3>${sec.title}</h3>
+      <p style="font-size:.78rem;color:var(--text-light);margin-bottom:8px;">${sec.desc}</p>`;
+    tasks.forEach(t => {
+      html += `<div class="prep-task">☐ ${t.task} <span class="dish-ref">— for ${t.dish} (${t.day} ${t.slot})</span></div>`;
+    });
+    html += "</div>";
+  });
+
+  // Quick weekday tips
+  html += `<div class="prep-section"><h3>⚡ Weekday Quick-Cook Tips</h3>`;
+  const quickDishes = weekdayDishes.filter(d => (d.recipe.prep + d.recipe.cook) <= 20);
+  const slowDishes = weekdayDishes.filter(d => (d.recipe.prep + d.recipe.cook) > 35);
+  if (quickDishes.length) {
+    html += `<p style="font-size:.82rem;margin-bottom:6px;">✅ <strong>Under 20 min (no stress):</strong> ${quickDishes.map(d => d.name).join(", ")}</p>`;
+  }
+  if (slowDishes.length) {
+    html += `<p style="font-size:.82rem;margin-bottom:6px;">⚠️ <strong>Over 35 min — prep ahead recommended:</strong> ${slowDishes.map(d => `${d.name} (${d.day}, ${d.recipe.prep+d.recipe.cook}m)`).join(", ")}</p>`;
+  }
+  html += "</div>";
+
+  document.getElementById("prepContent").innerHTML = html;
+}
+
+/* ═══════════════════════════════════════════════════════
+   PANTRY TRACKER
+   ═══════════════════════════════════════════════════════ */
+let pantryStock = {}; // { "onion": true, "paneer": false }
+
+function loadPantry() {
+  try {
+    const saved = localStorage.getItem("familyPantry");
+    if (saved) pantryStock = JSON.parse(saved);
+  } catch(e) { /* corrupt */ }
+}
+
+function savePantry() {
+  try { localStorage.setItem("familyPantry", JSON.stringify(pantryStock)); } catch(e) {}
+}
+
+function getAllIngredients() {
+  const map = {};
+  RECIPES.forEach(r => {
+    r.ingredients.forEach(ing => {
+      if (!map[ing]) map[ing] = { count: 0, dishes: [] };
+      map[ing].count++;
+      map[ing].dishes.push(r.name);
+    });
+  });
+  return map;
+}
+
+function getWeekIngredients() {
+  const map = {};
+  getWeekDates().forEach(d => {
+    const key = formatDate(d);
+    if (!mealPlan[key]) return;
+    MEAL_SLOTS.forEach(slot => {
+      const dishName = mealPlan[key][slot];
+      if (!dishName) return;
+      const recipe = RECIPES.find(r => r.name === dishName);
+      if (!recipe) return;
+      recipe.ingredients.forEach(ing => { map[ing] = (map[ing] || 0) + 1; });
+    });
+  });
+  return map;
+}
+
+function renderPantry() {
+  loadPantry();
+  const allIngs = getAllIngredients();
+  const weekIngs = getWeekIngredients();
+  const filter = (document.getElementById("pantryFilter")?.value || "").toLowerCase();
+
+  // Missing items banner
+  const needed = Object.keys(weekIngs);
+  const missing = needed.filter(ing => !pantryStock[ing]);
+  const missingEl = document.getElementById("pantryMissing");
+  if (needed.length && missing.length) {
+    missingEl.innerHTML = `<div class="missing-banner">
+      <strong>🛒 Missing for this week (${missing.length}):</strong> ${missing.join(", ")}
+      <br><span style="font-size:.78rem;color:var(--text-light)">Check items below to mark them in-stock, or copy this list for shopping.</span>
+    </div>`;
+  } else if (needed.length && !missing.length) {
+    missingEl.innerHTML = `<div class="missing-banner" style="background:#e8f5e9;border-color:#c8e6c9;">
+      <strong style="color:var(--accent)">✅ Pantry is fully stocked for this week!</strong>
+    </div>`;
+  } else {
+    missingEl.innerHTML = "";
+  }
+
+  // Ingredient grid
+  const sorted = Object.keys(allIngs).sort((a, b) => {
+    // Week's needs first, then alphabetical
+    const aNeeded = weekIngs[a] ? 1 : 0;
+    const bNeeded = weekIngs[b] ? 1 : 0;
+    if (bNeeded !== aNeeded) return bNeeded - aNeeded;
+    return a.localeCompare(b);
+  });
+
+  const filtered = filter ? sorted.filter(i => i.includes(filter)) : sorted;
+
+  document.getElementById("pantryGrid").innerHTML = filtered.map(ing => {
+    const checked = pantryStock[ing] ? "checked" : "";
+    const cls = pantryStock[ing] ? "pantry-item in-stock" : "pantry-item";
+    const weekBadge = weekIngs[ing] ? `<span class="usage-count" style="color:var(--primary);font-weight:600;">needed ×${weekIngs[ing]}</span>` : `<span class="usage-count">${allIngs[ing].count} recipes</span>`;
+    return `<label class="${cls}">
+      <input type="checkbox" ${checked} onchange="togglePantryItem('${ing.replace(/'/g,"\\'")}', this.checked)">
+      <span class="item-name">${ing}</span>
+      ${weekBadge}
+    </label>`;
+  }).join("");
+}
+
+function togglePantryItem(name, inStock) {
+  pantryStock[name] = inStock;
+  savePantry();
+  renderPantry();
+}
+
+function markAllInStock() {
+  const weekIngs = getWeekIngredients();
+  Object.keys(weekIngs).forEach(ing => { pantryStock[ing] = true; });
+  savePantry();
+  renderPantry();
+}
+
+function clearPantry() {
+  if (!confirm("Clear all pantry check marks?")) return;
+  pantryStock = {};
+  savePantry();
+  renderPantry();
+}
+
+/* ═══════════════════════════════════════════════════════
+   INGREDIENT LOOKUP
+   ═══════════════════════════════════════════════════════ */
+function renderIngredientLookup() {
+  const query = (document.getElementById("ingredientSearch")?.value || "").toLowerCase();
+  const container = document.getElementById("ingredientResults");
+
+  if (!query || query.length < 2) {
+    container.innerHTML = '<p style="color:#999;padding:16px;text-align:center;">Type at least 2 characters to search ingredients…</p>';
+    return;
+  }
+
+  const allIngs = getAllIngredients();
+  const matches = Object.keys(allIngs)
+    .filter(ing => ing.includes(query))
+    .sort((a, b) => allIngs[b].count - allIngs[a].count);
+
+  if (!matches.length) {
+    container.innerHTML = `<p style="color:#999;padding:16px;text-align:center;">No ingredients matching "${query}".</p>`;
+    return;
+  }
+
+  container.innerHTML = matches.map(ing => `
+    <div class="ingredient-result">
+      <h4>${ing} <span style="font-size:.75rem;color:var(--text-light);font-weight:400">(${allIngs[ing].count} recipes)</span></h4>
+      <div class="used-in">Used in: ${allIngs[ing].dishes.map(d => `<span>${d}</span>`).join("")}</div>
+    </div>
+  `).join("");
+}
+
+/* ═══════════════════════════════════════════════════════
+   RECIPE ROULETTE — pantry-weighted spinning wheel
+   ═══════════════════════════════════════════════════════ */
+const WHEEL_COLORS = ["#e65100","#ff8a65","#2e7d32","#81c784","#1565c0","#64b5f6","#6a1b9a","#ba68c8","#c62828","#ef9a9a","#00838f","#4dd0e1","#ef6c00","#ffb74d","#ad1457","#f48fb1"];
+let rouletteCandidates = [];
+let spinning = false;
+
+function getPantryMatchPct(recipe) {
+  loadPantry();
+  if (!recipe.ingredients.length) return 0;
+  const have = recipe.ingredients.filter(i => pantryStock[i]).length;
+  return Math.round((have / recipe.ingredients.length) * 100);
+}
+
+function prepareRoulette() {
+  loadPantry();
+  const mealF = document.getElementById("rouletteMeal").value;
+  const regionF = document.getElementById("rouletteRegion").value;
+  const indianRegions = ["North Indian","South Indian","Bengali","Gujarati","Maharashtrian","Rajasthani","Pan-Indian"];
+
+  let pool = RECIPES.filter(r => {
+    if (mealF && !r.meal.includes(mealF)) return false;
+    if (regionF === "indian" && !indianRegions.includes(r.region)) return false;
+    if (regionF === "international" && indianRegions.includes(r.region)) return false;
+    return true;
+  });
+
+  // Score by pantry match — base weight 1, bonus up to 4 for pantry %
+  pool = pool.map(r => {
+    const pct = getPantryMatchPct(r);
+    const weight = 1 + (pct / 100) * 4; // 1–5 range
+    return { ...r, pct, weight };
+  });
+
+  // Sort by match descending, take top 12 for the wheel
+  pool.sort((a, b) => b.pct - a.pct || a.name.localeCompare(b.name));
+  rouletteCandidates = pool.slice(0, 12);
+
+  drawWheel();
+  document.getElementById("rouletteResult").innerHTML = "";
+
+  // Show candidate list
+  const cEl = document.getElementById("rouletteCandidates");
+  if (rouletteCandidates.length) {
+    const totalWeight = rouletteCandidates.reduce((s, c) => s + c.weight, 0);
+    cEl.innerHTML = `<h3>🎯 Top ${rouletteCandidates.length} candidates (weighted by pantry match)</h3>
+      <div class="candidate-list">${rouletteCandidates.map(c => {
+        const chance = Math.round((c.weight / totalWeight) * 100);
+        return `<div class="candidate-chip"><span>${c.name} <span style="font-size:.7rem;color:#999">${c.pct}% in pantry</span></span><span class="pct">${chance}%</span></div>`;
+      }).join("")}</div>`;
+  } else {
+    cEl.innerHTML = '<p style="color:#999;text-align:center;">No recipes match your filters.</p>';
+  }
+}
+
+function drawWheel(highlightIdx = -1, rotation = 0) {
+  const canvas = document.getElementById("rouletteCanvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const cx = 280, cy = 280, radius = 260;
+  const n = rouletteCandidates.length;
+  if (!n) { ctx.clearRect(0, 0, 560, 560); return; }
+
+  const totalWeight = rouletteCandidates.reduce((s, c) => s + c.weight, 0);
+  ctx.clearRect(0, 0, 560, 560);
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rotation);
+  ctx.translate(-cx, -cy);
+
+  let startAngle = -Math.PI / 2;
+  rouletteCandidates.forEach((c, i) => {
+    const sliceAngle = (c.weight / totalWeight) * 2 * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, radius, startAngle, startAngle + sliceAngle);
+    ctx.closePath();
+    ctx.fillStyle = WHEEL_COLORS[i % WHEEL_COLORS.length];
+    if (highlightIdx === i) {
+      ctx.fillStyle = "#ffeb3b";
+    }
+    ctx.fill();
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Label
+    const midAngle = startAngle + sliceAngle / 2;
+    const labelR = radius * 0.65;
+    const lx = cx + Math.cos(midAngle) * labelR;
+    const ly = cy + Math.sin(midAngle) * labelR;
+    ctx.save();
+    ctx.translate(lx, ly);
+    ctx.rotate(midAngle + Math.PI / 2);
+    ctx.fillStyle = highlightIdx === i ? "#333" : "#fff";
+    ctx.font = `bold ${Math.min(14, 160 / n)}px Segoe UI, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    // Truncate long names
+    let label = c.name.length > 16 ? c.name.slice(0, 15) + "…" : c.name;
+    ctx.fillText(label, 0, 0);
+    ctx.restore();
+
+    startAngle += sliceAngle;
+  });
+
+  // Center circle
+  ctx.beginPath();
+  ctx.arc(cx, cy, 30, 0, 2 * Math.PI);
+  ctx.fillStyle = "#fff";
+  ctx.fill();
+  ctx.strokeStyle = var_primary();
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.fillStyle = var_primary();
+  ctx.font = "bold 20px sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("🍛", cx, cy);
+
+  ctx.restore();
+}
+
+function var_primary() { return "#e65100"; }
+
+function spinWheel() {
+  if (spinning || !rouletteCandidates.length) return;
+  spinning = true;
+  document.getElementById("spinBtn").disabled = true;
+  document.getElementById("rouletteResult").innerHTML = '<div style="font-size:1.2rem;">🌀 Spinning...</div>';
+
+  const totalWeight = rouletteCandidates.reduce((s, c) => s + c.weight, 0);
+
+  // Pick winner weighted
+  let r = Math.random() * totalWeight;
+  let winnerIdx = 0;
+  for (let i = 0; i < rouletteCandidates.length; i++) {
+    r -= rouletteCandidates[i].weight;
+    if (r <= 0) { winnerIdx = i; break; }
+  }
+
+  // Calculate target angle — we need the pointer (top) to land on the winner slice
+  let angleBeforeWinner = 0;
+  for (let i = 0; i < winnerIdx; i++) {
+    angleBeforeWinner += (rouletteCandidates[i].weight / totalWeight) * 2 * Math.PI;
+  }
+  const winnerSlice = (rouletteCandidates[winnerIdx].weight / totalWeight) * 2 * Math.PI;
+  const targetMid = angleBeforeWinner + winnerSlice / 2;
+  // Pointer is at top (-π/2 in canvas). Wheel rotation needed so winner's mid aligns with top.
+  // Final rotation: -(targetMid) so that slice center is at top, plus full spins
+  const fullSpins = 5 + Math.floor(Math.random() * 3);
+  const finalAngle = fullSpins * 2 * Math.PI - targetMid;
+
+  const duration = 4000;
+  const startTime = performance.now();
+
+  function animate(now) {
+    const elapsed = now - startTime;
+    const t = Math.min(elapsed / duration, 1);
+    // Ease out cubic
+    const eased = 1 - Math.pow(1 - t, 3);
+    const currentAngle = eased * finalAngle;
+
+    drawWheel(-1, currentAngle);
+
+    if (t < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      // Reveal winner
+      drawWheel(winnerIdx, finalAngle);
+      const winner = rouletteCandidates[winnerIdx];
+      document.getElementById("rouletteResult").innerHTML = `
+        <div class="dish-reveal">${winner.name}</div>
+        <div class="dish-meta">${winner.region} · ⏱ ${winner.prep + winner.cook}m (prep ${winner.prep}m + cook ${winner.cook}m)</div>
+        <div class="match-bar">🏪 ${winner.pct}% ingredients in pantry</div>
+        ${winner.prepAhead?.length ? `<div style="font-size:.8rem;color:var(--accent);margin-top:8px">🧑‍🍳 <strong>Prep ahead:</strong> ${winner.prepAhead.join(" · ")}</div>` : ""}
+      `;
+      spinning = false;
+      document.getElementById("spinBtn").disabled = false;
+    }
+  }
+
+  requestAnimationFrame(animate);
+}
+
+// Close modal on backdrop click or Escape
+document.getElementById("pickModal").addEventListener("click", e => { if (e.target === e.currentTarget) closeModal(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+</script>
+</body>
+</html>
