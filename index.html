@@ -106,7 +106,7 @@ section.active { display: block; }
   nav, .tab-bar, .data-bar, .recipe-filters, .modal-overlay,
   .btn-primary, .btn-secondary, .btn-accent, .clear-btn,
   .week-nav button, .pantry-controls,
-  #section-recipes, #section-grocery, #section-prep, #section-pantry, #section-roulette { display: none !important; }
+  #section-recipes, #section-grocery, #section-prep, #section-pantry, #section-roulette, #section-vote { display: none !important; }
   section { display: block !important; }
   #section-planner { display: block !important; }
   .week-grid { font-size: .7rem; }
@@ -174,6 +174,38 @@ section.active { display: block; }
 .candidate-chip .pct { font-weight: 600; color: var(--accent); font-size: .75rem; }
 @keyframes popIn { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
+/* ── DINNER VOTE ── */
+.vote-date-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.vote-date-bar label { font-weight: 600; font-size: .9rem; }
+.vote-date-bar input[type=date] { padding: 7px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: .85rem; }
+.vote-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.vote-card { background: #fff; border: 2px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center; transition: .2s; position: relative; }
+.vote-card:hover { border-color: var(--primary-light); box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+.vote-card.winner { border-color: #ffd600; background: #fffde7; box-shadow: 0 0 0 3px rgba(255,214,0,.3); }
+.vote-card h3 { font-size: 1rem; color: var(--primary-dark); margin-bottom: 4px; }
+.vote-card .vote-meta { font-size: .78rem; color: var(--text-light); margin-bottom: 10px; }
+.vote-card .vote-bar-track { height: 8px; background: #f0f0f0; border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
+.vote-card .vote-bar-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
+.vote-card .vote-count { font-size: .85rem; font-weight: 600; margin-bottom: 10px; }
+.vote-buttons { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+.vote-btn { padding: 6px 16px; border: 2px solid var(--border); border-radius: 20px; cursor: pointer; font-size: .8rem; background: #fff; transition: .15s; }
+.vote-btn:hover { border-color: var(--primary); color: var(--primary); }
+.vote-btn.voted { background: var(--primary); color: #fff; border-color: var(--primary); }
+.vote-btn.voted-accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+.vote-btn.voted-blue { background: #1565c0; color: #fff; border-color: #1565c0; }
+.family-legend { display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.family-chip { display: flex; align-items: center; gap: 4px; font-size: .82rem; font-weight: 500; }
+.family-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.add-option-bar { display: flex; gap: 8px; margin-top: 16px; }
+.add-option-bar input { flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: .85rem; }
+.add-option-bar button { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: .82rem; }
+.vote-winner-banner { background: linear-gradient(135deg, #fff9c4, #fff176); border: 2px solid #ffd600; border-radius: var(--radius); padding: 14px 20px; margin-bottom: 16px; text-align: center; font-size: 1rem; animation: popIn .5s ease; }
+.vote-winner-banner .winner-name { font-size: 1.3rem; font-weight: 700; color: var(--primary-dark); }
+.vote-history { margin-top: 20px; }
+.vote-history h3 { font-size: .95rem; color: var(--text-light); margin-bottom: 8px; }
+.vote-history-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f5f5f5; font-size: .82rem; }
+.vote-history-item .winner-label { color: var(--accent); font-weight: 600; }
+
 /* ── RESPONSIVE ── */
 @media (max-width: 900px) {
   .week-grid { grid-template-columns: 70px repeat(7, 1fr); font-size: .7rem; }
@@ -206,6 +238,7 @@ section.active { display: block; }
     <button class="tab-btn" data-tab="prep">🧑‍🍳 Prep</button>
     <button class="tab-btn" data-tab="pantry">🏪 Pantry</button>
     <button class="tab-btn" data-tab="roulette">🎰 Roulette</button>
+    <button class="tab-btn" data-tab="vote">🗳️ Vote</button>
   </div>
 </nav>
 
@@ -351,9 +384,36 @@ section.active { display: block; }
       <div class="roulette-candidates" id="rouletteCandidates"></div>
     </div>
   </section>
-</div>
 
-<!-- ════════ PICK DISH MODAL ════════ -->
+  <!-- ════════ DINNER VOTE TAB ════════ -->
+  <section id="section-vote">
+    <div class="card">
+      <h2>🗳️ Dinner Vote — What's for dinner?</h2>
+      <p style="font-size:.85rem;color:var(--text-light);margin-bottom:14px;">
+        Each family member picks their top choice. The dish with the most votes wins! 🏆
+      </p>
+      <div class="family-legend">
+        <div class="family-chip"><span class="family-dot" style="background:var(--primary)"></span> Rahul</div>
+        <div class="family-chip"><span class="family-dot" style="background:var(--accent)"></span> Nabanita</div>
+        <div class="family-chip"><span class="family-dot" style="background:#1565c0"></span> Vedanshi</div>
+      </div>
+      <div class="vote-date-bar">
+        <label>📅 Voting for:</label>
+        <input type="date" id="voteDate" onchange="renderVote()">
+        <button class="btn-secondary" onclick="setVoteToday()" style="padding:6px 14px;border-radius:6px;cursor:pointer;font-size:.82rem;">Today</button>
+        <button class="btn-secondary" onclick="resetVotes()" style="padding:6px 14px;border-radius:6px;cursor:pointer;font-size:.82rem;">🔄 Reset Votes</button>
+      </div>
+      <div id="voteWinnerBanner"></div>
+      <div class="vote-options" id="voteOptions"></div>
+      <div class="add-option-bar">
+        <input type="text" id="addVoteOption" placeholder="Add a custom dish option..." list="dinnerSuggestions">
+        <datalist id="dinnerSuggestions"></datalist>
+        <button class="btn-accent" onclick="addVoteOption()">+ Add Option</button>
+      </div>
+      <div class="vote-history" id="voteHistory"></div>
+    </div>
+  </section>
+</div>
 <div class="modal-overlay" id="pickModal">
   <div class="modal">
     <h2 id="pickModalTitle">Pick a Dish</h2>
@@ -524,6 +584,7 @@ let mealPlan = {};  // { "2026-04-13": { breakfast:"Poha", lunch:"…" } }
 window.addEventListener("DOMContentLoaded", () => {
   loadFromLocalStorage();
   loadPantry();
+  loadVotes();
   renderWeek();
   renderRecipes();
   setupTabs();
@@ -543,6 +604,7 @@ function setupTabs() {
       if (btn.dataset.tab === "prep") renderWeekendPrep();
       if (btn.dataset.tab === "pantry") { renderPantry(); renderIngredientLookup(); }
       if (btn.dataset.tab === "roulette") prepareRoulette();
+      if (btn.dataset.tab === "vote") renderVote();
     });
   });
 }
@@ -1264,6 +1326,192 @@ function spinWheel() {
   }
 
   requestAnimationFrame(animate);
+}
+
+/* ═══════════════════════════════════════════════════════
+   DINNER VOTE — family poll for tonight's dinner
+   ═══════════════════════════════════════════════════════ */
+const FAMILY = [
+  { name: "Rahul",    color: "#e65100", btnClass: "voted" },
+  { name: "Nabanita", color: "#2e7d32", btnClass: "voted-accent" },
+  { name: "Vedanshi", color: "#1565c0", btnClass: "voted-blue" },
+];
+
+let voteData = {}; // { "2026-04-12": { options: ["Paneer Butter Masala","Dal Tadka"], votes: { "Paneer Butter Masala": ["Rahul","Vedanshi"], ... } } }
+
+function loadVotes() {
+  try {
+    const saved = localStorage.getItem("familyDinnerVotes");
+    if (saved) voteData = JSON.parse(saved);
+  } catch(e) {}
+}
+
+function saveVotes() {
+  try { localStorage.setItem("familyDinnerVotes", JSON.stringify(voteData)); } catch(e) {}
+}
+
+function getVoteDate() {
+  return document.getElementById("voteDate").value || formatDate(new Date());
+}
+
+function setVoteToday() {
+  document.getElementById("voteDate").value = formatDate(new Date());
+  renderVote();
+}
+
+function ensureVoteDay(dateKey) {
+  if (!voteData[dateKey]) {
+    // Pre-populate with tonight's planned dinner + 2 random dinner suggestions
+    const options = [];
+    if (mealPlan[dateKey]?.dinner) options.push(mealPlan[dateKey].dinner);
+    const dinnerRecipes = RECIPES.filter(r => r.meal.includes("dinner"));
+    const shuffled = dinnerRecipes.sort(() => Math.random() - 0.5);
+    for (const r of shuffled) {
+      if (options.length >= 4) break;
+      if (!options.includes(r.name)) options.push(r.name);
+    }
+    voteData[dateKey] = { options, votes: {} };
+    options.forEach(o => { voteData[dateKey].votes[o] = []; });
+    saveVotes();
+  }
+}
+
+function renderVote() {
+  loadVotes();
+  const dateInput = document.getElementById("voteDate");
+  if (!dateInput.value) dateInput.value = formatDate(new Date());
+  const dateKey = getVoteDate();
+  ensureVoteDay(dateKey);
+
+  const day = voteData[dateKey];
+  const totalVotes = Object.values(day.votes).reduce((s, arr) => s + arr.length, 0);
+
+  // Find winner
+  let maxVotes = 0, winner = null;
+  for (const [dish, voters] of Object.entries(day.votes)) {
+    if (voters.length > maxVotes) { maxVotes = voters.length; winner = dish; }
+  }
+
+  // Winner banner
+  const bannerEl = document.getElementById("voteWinnerBanner");
+  if (maxVotes >= 2) {
+    bannerEl.innerHTML = `<div class="vote-winner-banner">🏆 <span class="winner-name">${winner}</span> wins with ${maxVotes} vote${maxVotes > 1 ? "s" : ""}!</div>`;
+  } else if (totalVotes > 0) {
+    bannerEl.innerHTML = `<div class="vote-winner-banner" style="background:#e3f2fd;border-color:#90caf9;">🤔 It's a tie! Need more votes to decide.</div>`;
+  } else {
+    bannerEl.innerHTML = "";
+  }
+
+  // Render option cards
+  const optionsEl = document.getElementById("voteOptions");
+  optionsEl.innerHTML = day.options.map(dish => {
+    const voters = day.votes[dish] || [];
+    const pct = totalVotes ? Math.round((voters.length / totalVotes) * 100) : 0;
+    const recipe = RECIPES.find(r => r.name === dish);
+    const isWinner = dish === winner && maxVotes >= 2;
+    const barColor = isWinner ? "#ffd600" : "var(--primary-light)";
+    const meta = recipe
+      ? `${recipe.region} · ⏱ ${recipe.prep + recipe.cook}m`
+      : "Custom dish";
+
+    const buttons = FAMILY.map(f => {
+      const hasVoted = voters.includes(f.name);
+      const cls = hasVoted ? `vote-btn ${f.btnClass}` : "vote-btn";
+      return `<button class="${cls}" onclick="toggleVote('${dateKey}','${dish.replace(/'/g,"\\'")}','${f.name}')">${f.name}${hasVoted ? " ✓" : ""}</button>`;
+    }).join("");
+
+    return `<div class="vote-card ${isWinner ? "winner" : ""}">
+      <h3>${dish}</h3>
+      <div class="vote-meta">${meta}</div>
+      <div class="vote-bar-track"><div class="vote-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
+      <div class="vote-count">${voters.length} vote${voters.length !== 1 ? "s" : ""} (${pct}%)</div>
+      <div class="vote-buttons">${buttons}</div>
+    </div>`;
+  }).join("");
+
+  // Dinner suggestions datalist
+  const datalist = document.getElementById("dinnerSuggestions");
+  datalist.innerHTML = RECIPES
+    .filter(r => r.meal.includes("dinner") && !day.options.includes(r.name))
+    .map(r => `<option value="${r.name}">`).join("");
+
+  // Vote history
+  renderVoteHistory();
+}
+
+function toggleVote(dateKey, dish, person) {
+  loadVotes();
+  const day = voteData[dateKey];
+  if (!day) return;
+
+  // Remove person's vote from all options first (one vote per person)
+  for (const d of day.options) {
+    day.votes[d] = (day.votes[d] || []).filter(v => v !== person);
+  }
+
+  // Add vote to selected dish (unless they're un-voting)
+  const wasVoted = (voteData[dateKey].votes[dish] || []).includes(person);
+  // Since we already removed, just add unless it was a toggle-off
+  // We need to check the original state. Let's re-check from saved data.
+  // Actually we already removed above, so just add:
+  if (!wasVoted) {
+    if (!day.votes[dish]) day.votes[dish] = [];
+    day.votes[dish].push(person);
+  }
+
+  saveVotes();
+  renderVote();
+}
+
+function addVoteOption() {
+  const input = document.getElementById("addVoteOption");
+  const dish = input.value.trim();
+  if (!dish) return;
+
+  const dateKey = getVoteDate();
+  loadVotes();
+  ensureVoteDay(dateKey);
+
+  if (voteData[dateKey].options.includes(dish)) {
+    input.value = "";
+    return;
+  }
+
+  voteData[dateKey].options.push(dish);
+  voteData[dateKey].votes[dish] = [];
+  saveVotes();
+  input.value = "";
+  renderVote();
+}
+
+function resetVotes() {
+  const dateKey = getVoteDate();
+  if (!confirm(`Reset all votes for ${dateKey}?`)) return;
+  delete voteData[dateKey];
+  saveVotes();
+  renderVote();
+}
+
+function renderVoteHistory() {
+  const container = document.getElementById("voteHistory");
+  const dates = Object.keys(voteData).sort().reverse().filter(d => d !== getVoteDate());
+  if (!dates.length) { container.innerHTML = ""; return; }
+
+  let html = "<h3>📜 Past Dinner Votes</h3>";
+  dates.slice(0, 14).forEach(dateKey => {
+    const day = voteData[dateKey];
+    let maxV = 0, winner = "No votes";
+    for (const [dish, voters] of Object.entries(day.votes)) {
+      if (voters.length > maxV) { maxV = voters.length; winner = dish; }
+    }
+    const dateLabel = new Date(dateKey + "T12:00:00").toLocaleDateString("en-IN", { weekday:"short", month:"short", day:"numeric" });
+    html += `<div class="vote-history-item">
+      <span>${dateLabel}</span>
+      <span class="winner-label">🏆 ${winner} (${maxV} votes)</span>
+    </div>`;
+  });
+
+  container.innerHTML = html;
 }
 
 // Close modal on backdrop click or Escape
