@@ -271,12 +271,13 @@ section.active { display: block; }
 
   <!-- DATA BAR -->
   <div class="data-bar">
-    <button onclick="exportAll()">💾 Save All</button>
-    <button onclick="document.getElementById('importFile').click()">📂 Load Data</button>
+    <button onclick="pickDataFolder()">📁 Set Data Folder</button>
+    <button onclick="saveAllToFiles()">💾 Save Now</button>
+    <button onclick="loadAllFromFiles()">📂 Reload from Disk</button>
     <button onclick="autoFillWeek()">🎲 Auto-Fill Week</button>
     <button onclick="clearWeek()">🗑️ Clear Week</button>
     <button onclick="window.print()">🖨️ Print Week</button>
-    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)" multiple>
+    <span id="autoSaveStatus" style="font-size:.75rem;color:var(--text-light);align-self:center;"></span>
   </div>
 
   <!-- ════════ PLANNER TAB ════════ -->
@@ -693,16 +694,28 @@ function saveCustomRecipes() {
     localStorage.setItem("familyCustomRecipes", JSON.stringify(custom));
     localStorage.setItem("familyDeletedRecipes", JSON.stringify(deletedBuiltins));
   } catch(e) {}
+  scheduleAutoSave();
 }
 
 /* ═══════════════════════════════════════════════════════
    INIT
    ═══════════════════════════════════════════════════════ */
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
+  // Load from localStorage first (instant cache)
   loadCustomRecipes();
   loadFromLocalStorage();
   loadPantry();
   loadVotes();
+
+  // Try to restore saved directory handle and load from files
+  const hasDir = await restoreDirHandle();
+  if (hasDir) {
+    await loadAllFromFiles();
+    updateSaveStatus("✅ Auto-save active");
+  } else {
+    updateSaveStatus("📁 Set a data folder for auto-save");
+  }
+
   renderWeek();
   renderRecipes();
   setupTabs();
@@ -998,11 +1011,165 @@ function renderGrocery() {
 }
 
 /* ═══════════════════════════════════════════════════════
-   PERSISTENCE — localStorage + JSON file export/import
-   Each data type saves to its own JSON file.
+   PERSISTENCE — Auto-save to JSON files via File System Access API
+   Falls back to localStorage if API unavailable or no folder picked.
+   Files: meal-plan.json, pantry.json, votes.json, custom-recipes.json
    ═══════════════════════════════════════════════════════ */
+let dirHandle = null; // FileSystemDirectoryHandle
+let autoSaveTimer = null;
+
+// ── IndexedDB: persist the directory handle across sessions ──
+function openHandleDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open("MealPlannerHandles", 1);
+    req.onupgradeneeded = () => req.result.createObjectStore("handles");
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function saveDirHandle(handle) {
+  const db = await openHandleDB();
+  const tx = db.transaction("handles", "readwrite");
+  tx.objectStore("handles").put(handle, "dataDir");
+  return new Promise(r => { tx.oncomplete = r; });
+}
+
+async function loadDirHandle() {
+  const db = await openHandleDB();
+  const tx = db.transaction("handles", "readonly");
+  const req = tx.objectStore("handles").get("dataDir");
+  return new Promise(r => { req.onsuccess = () => r(req.result || null); });
+}
+
+// ── Pick folder (one-time setup) ──
+async function pickDataFolder() {
+  if (!window.showDirectoryPicker) {
+    alert("Your browser doesn't support auto-save to files. Use Chrome or Edge.");
+    return;
+  }
+  try {
+    dirHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+    await saveDirHandle(dirHandle);
+    await saveAllToFiles();
+    updateSaveStatus("✅ Data folder set — auto-saving enabled");
+  } catch(e) {
+    if (e.name !== "AbortError") console.error(e);
+  }
+}
+
+// ── Restore saved handle on load ──
+async function restoreDirHandle() {
+  try {
+    const saved = await loadDirHandle();
+    if (!saved) return false;
+    // Verify permission (may prompt user once per session)
+    const perm = await saved.queryPermission({ mode: "readwrite" });
+    if (perm === "granted") {
+      dirHandle = saved;
+      return true;
+    }
+    // Try requesting permission silently
+    const req = await saved.requestPermission({ mode: "readwrite" });
+    if (req === "granted") {
+      dirHandle = saved;
+      return true;
+    }
+  } catch(e) { /* handle expired or user denied */ }
+  return false;
+}
+
+// ── Write a JSON file to the data folder ──
+async function writeFile(filename, data) {
+  if (!dirHandle) return;
+  try {
+    const fh = await dirHandle.getFileHandle(filename, { create: true });
+    const writable = await fh.createWritable();
+    await writable.write(JSON.stringify(data, null, 2));
+    await writable.close();
+  } catch(e) { console.error(`Failed to write ${filename}:`, e); }
+}
+
+// ── Read a JSON file from the data folder ──
+async function readFile(filename) {
+  if (!dirHandle) return null;
+  try {
+    const fh = await dirHandle.getFileHandle(filename);
+    const file = await fh.getFile();
+    const text = await file.text();
+    return JSON.parse(text);
+  } catch(e) { return null; /* file doesn't exist yet */ }
+}
+
+// ── Save all data to files ──
+async function saveAllToFiles() {
+  if (!dirHandle) return;
+  await writeFile("meal-plan.json", mealPlan);
+  await writeFile("pantry.json", { stock: pantryStock, custom: customIngredients });
+  await writeFile("votes.json", voteData);
+  const customRecipes = RECIPES.filter(r => r._custom);
+  await writeFile("custom-recipes.json", { recipes: customRecipes, deleted: deletedBuiltins });
+  updateSaveStatus(`✅ Saved ${new Date().toLocaleTimeString()}`);
+}
+
+// ── Load all data from files ──
+async function loadAllFromFiles() {
+  if (!dirHandle) {
+    alert("No data folder set. Click '📁 Set Data Folder' first.");
+    return;
+  }
+  const mp = await readFile("meal-plan.json");
+  if (mp) mealPlan = mp;
+
+  const p = await readFile("pantry.json");
+  if (p) {
+    if (p.stock) pantryStock = p.stock;
+    if (p.custom) customIngredients = p.custom;
+  }
+
+  const v = await readFile("votes.json");
+  if (v) voteData = v;
+
+  const cr = await readFile("custom-recipes.json");
+  if (cr) {
+    if (cr.recipes) {
+      cr.recipes.forEach(r => {
+        r._custom = true;
+        if (!RECIPES.find(x => x.name === r.name)) RECIPES.push(r);
+      });
+    }
+    if (cr.deleted) {
+      deletedBuiltins = cr.deleted;
+      RECIPES = RECIPES.filter(r => !deletedBuiltins.includes(r.name));
+    }
+  }
+
+  // Sync to localStorage as cache
+  saveToLocalStorage();
+  savePantry();
+  saveVotes();
+  saveCustomRecipes();
+
+  renderWeek();
+  renderRecipes();
+  updateSaveStatus("✅ Loaded from disk");
+}
+
+// ── Auto-save: debounced, triggers on any data change ──
+function scheduleAutoSave() {
+  if (autoSaveTimer) clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(() => saveAllToFiles(), 1000);
+}
+
+function updateSaveStatus(msg) {
+  const el = document.getElementById("autoSaveStatus");
+  if (el) el.textContent = msg;
+}
+
+// ── localStorage fallbacks (still used as cache) ──
 function saveToLocalStorage() {
   try { localStorage.setItem("familyMealPlan", JSON.stringify(mealPlan)); } catch(e) {}
+  scheduleAutoSave();
 }
 
 function loadFromLocalStorage() {
@@ -1010,90 +1177,6 @@ function loadFromLocalStorage() {
     const saved = localStorage.getItem("familyMealPlan");
     if (saved) mealPlan = JSON.parse(saved);
   } catch(e) {}
-}
-
-// ── File helpers ──
-function downloadJSON(data, filename) {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type:"application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
-// ── Export all as separate files (zipped into sequential downloads) ──
-function exportAll() {
-  const ts = formatDate(new Date());
-  // Small delay between downloads so browser doesn't block them
-  downloadJSON(mealPlan, `meal-plan-${ts}.json`);
-  setTimeout(() => downloadJSON(
-    { stock: pantryStock, custom: customIngredients },
-    `pantry-${ts}.json`
-  ), 300);
-  setTimeout(() => downloadJSON(voteData, `votes-${ts}.json`), 600);
-  const customRecipes = RECIPES.filter(r => r._custom);
-  if (customRecipes.length || deletedBuiltins.length) {
-    setTimeout(() => downloadJSON(
-      { recipes: customRecipes, deleted: deletedBuiltins },
-      `custom-recipes-${ts}.json`
-    ), 900);
-  }
-}
-
-// ── Import: auto-detects file type by content/filename ──
-function importData(event) {
-  const files = event.target.files;
-  if (!files.length) return;
-  let loaded = 0;
-  const results = [];
-
-  for (const file of files) {
-    const reader = new FileReader();
-    reader.onload = e => {
-      try {
-        const data = JSON.parse(e.target.result);
-        const name = file.name.toLowerCase();
-        if (name.includes("pantry")) {
-          // Pantry file: { stock: {...}, custom: [...] }
-          if (data.stock) pantryStock = data.stock;
-          if (data.custom) customIngredients = data.custom;
-          savePantry();
-          results.push("🏪 Pantry");
-        } else if (name.includes("vote")) {
-          // Votes file
-          voteData = data;
-          saveVotes();
-          results.push("🗳️ Votes");
-        } else if (name.includes("custom-recipe")) {
-          // Custom recipes file: { recipes: [...], deleted: [...] }
-          if (data.recipes) {
-            data.recipes.forEach(r => {
-              r._custom = true;
-              if (!RECIPES.find(x => x.name === r.name)) RECIPES.push(r);
-            });
-          }
-          if (data.deleted) deletedBuiltins = data.deleted;
-          saveCustomRecipes();
-          results.push("📖 Custom Recipes");
-        } else {
-          // Default: treat as meal plan (object with date keys)
-          mealPlan = data;
-          saveToLocalStorage();
-          results.push("📅 Meal Plan");
-        }
-      } catch { results.push(`❌ ${file.name} (invalid)`); }
-
-      loaded++;
-      if (loaded === files.length) {
-        renderWeek();
-        renderRecipes();
-        alert(`Loaded: ${results.join(", ")} 🎉`);
-      }
-    };
-    reader.readAsText(file);
-  }
-  event.target.value = "";
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1219,6 +1302,7 @@ function savePantry() {
     localStorage.setItem("familyPantry", JSON.stringify(pantryStock));
     localStorage.setItem("familyPantryCustom", JSON.stringify(customIngredients));
   } catch(e) {}
+  scheduleAutoSave();
 }
 
 function getAllIngredients() {
@@ -1650,6 +1734,7 @@ function loadVotes() {
 
 function saveVotes() {
   try { localStorage.setItem("familyDinnerVotes", JSON.stringify(voteData)); } catch(e) {}
+  scheduleAutoSave();
 }
 
 function getVoteDate() {
