@@ -1368,6 +1368,16 @@ function isFullyInStock(recipe) {
   return recipe.ingredients.length > 0 && recipe.ingredients.every(i => pantryStock[i]);
 }
 
+function getMissingIngredients(recipe) {
+  return recipe.ingredients.filter(i => !pantryStock[i]);
+}
+
+function isMostlyInStock(recipe, threshold = 0.8) {
+  if (!recipe.ingredients.length) return false;
+  const have = recipe.ingredients.filter(i => pantryStock[i]).length;
+  return (have / recipe.ingredients.length) >= threshold;
+}
+
 function prepareRoulette() {
   loadPantry();
   const mealF = document.getElementById("rouletteMeal").value;
@@ -1381,24 +1391,26 @@ function prepareRoulette() {
     return true;
   });
 
-  // Only include recipes where all ingredients are in stock
-  let inStockPool = pool.filter(r => isFullyInStock(r));
+  // Include recipes where ≥80% of ingredients are in stock
+  let inStockPool = pool.filter(r => isMostlyInStock(r, 0.8));
 
-  // Fallback: if nothing is fully in stock, show top matches with a notice
+  // Fallback: if nothing reaches 80%, show top matches with a notice
   let fallback = false;
   if (!inStockPool.length && pool.length) {
     fallback = true;
-    inStockPool = pool.map(r => ({ ...r, pct: getPantryMatchPct(r) }))
+    inStockPool = pool.map(r => ({ ...r, pct: getPantryMatchPct(r), missing: getMissingIngredients(r) }))
       .sort((a, b) => b.pct - a.pct)
       .slice(0, 12);
   } else {
-    inStockPool = inStockPool.map(r => ({ ...r, pct: 100 }));
+    inStockPool = inStockPool.map(r => ({ ...r, pct: getPantryMatchPct(r), missing: getMissingIngredients(r) }));
+    // Sort: 100% first, then by pct descending
+    inStockPool.sort((a, b) => b.pct - a.pct);
   }
 
-  // Equal weight since all are fully in stock (or weighted by pct in fallback)
+  // Weight: 100% gets weight 5, 80% gets weight 1
   rouletteCandidates = inStockPool.slice(0, 12).map(r => ({
     ...r,
-    weight: fallback ? 1 + (r.pct / 100) * 4 : 1
+    weight: fallback ? 1 + (r.pct / 100) * 4 : (r.pct === 100 ? 5 : 1 + (r.pct / 100) * 2)
   }));
 
   drawWheel();
@@ -1409,12 +1421,15 @@ function prepareRoulette() {
   if (rouletteCandidates.length) {
     const totalWeight = rouletteCandidates.reduce((s, c) => s + c.weight, 0);
     const notice = fallback
-      ? `<p style="font-size:.82rem;color:var(--primary);margin-bottom:8px;">⚠️ No recipes are fully in stock. Showing best partial matches — check your <strong>🏪 Pantry</strong> to stock up!</p>`
-      : `<p style="font-size:.82rem;color:var(--accent);margin-bottom:8px;">✅ Only showing dishes you have <strong>all ingredients</strong> for.</p>`;
+      ? `<p style="font-size:.82rem;color:var(--primary);margin-bottom:8px;">⚠️ No recipes have ≥80% ingredients in stock. Showing best partial matches — check your <strong>🏪 Pantry</strong> to stock up!</p>`
+      : `<p style="font-size:.82rem;color:var(--accent);margin-bottom:8px;">✅ Showing dishes with <strong>≥80% ingredients</strong> in stock. Fully-stocked dishes get higher odds.</p>`;
     cEl.innerHTML = `${notice}<h3>🎯 ${rouletteCandidates.length} candidates on the wheel</h3>
       <div class="candidate-list">${rouletteCandidates.map(c => {
         const chance = Math.round((c.weight / totalWeight) * 100);
-        return `<div class="candidate-chip"><span>${c.name} <span style="font-size:.7rem;color:#999">${c.pct}% in pantry</span></span><span class="pct">${chance}%</span></div>`;
+        const missingTag = c.missing.length
+          ? ` · <span style="color:var(--primary)">need: ${c.missing.join(", ")}</span>`
+          : ` · <span style="color:var(--accent)">✓ all stocked</span>`;
+        return `<div class="candidate-chip"><span>${c.name} <span style="font-size:.7rem;color:#999">${c.pct}%${missingTag}</span></span><span class="pct">${chance}%</span></div>`;
       }).join("")}</div>`;
   } else {
     cEl.innerHTML = '<p style="color:#999;text-align:center;">No recipes match your filters.</p>';
@@ -1537,10 +1552,14 @@ function spinWheel() {
       // Reveal winner
       drawWheel(winnerIdx, finalAngle);
       const winner = rouletteCandidates[winnerIdx];
+      const missingNote = winner.missing?.length
+        ? `<div style="font-size:.82rem;color:var(--primary);margin-top:6px;">🛒 <strong>Stock up:</strong> ${winner.missing.join(", ")}</div>`
+        : `<div style="font-size:.82rem;color:var(--accent);margin-top:6px;">✅ All ingredients in stock!</div>`;
       document.getElementById("rouletteResult").innerHTML = `
         <div class="dish-reveal">${winner.name}</div>
         <div class="dish-meta">${winner.region} · ⏱ ${winner.prep + winner.cook}m (prep ${winner.prep}m + cook ${winner.cook}m)</div>
         <div class="match-bar">🏪 ${winner.pct}% ingredients in pantry</div>
+        ${missingNote}
         ${winner.prepAhead?.length ? `<div style="font-size:.8rem;color:var(--accent);margin-top:8px">🧑‍🍳 <strong>Prep ahead:</strong> ${winner.prepAhead.join(" · ")}</div>` : ""}
       `;
       spinning = false;
@@ -1588,9 +1607,9 @@ function ensureVoteDay(dateKey) {
     const options = [];
     // Include tonight's planned dinner if it exists
     if (mealPlan[dateKey]?.dinner) options.push(mealPlan[dateKey].dinner);
-    // Only suggest dinners where all ingredients are in stock
-    let dinnerPool = RECIPES.filter(r => r.meal.includes("dinner") && isFullyInStock(r));
-    // Fallback: if nothing fully in stock, use all dinner recipes
+    // Suggest dinners where ≥80% of ingredients are in stock
+    let dinnerPool = RECIPES.filter(r => r.meal.includes("dinner") && isMostlyInStock(r, 0.8));
+    // Fallback: if nothing reaches 80%, use all dinner recipes
     if (!dinnerPool.length) dinnerPool = RECIPES.filter(r => r.meal.includes("dinner"));
     const shuffled = dinnerPool.sort(() => Math.random() - 0.5);
     for (const r of shuffled) {
@@ -1641,6 +1660,17 @@ function renderVote() {
       ? `${recipe.region} · ⏱ ${recipe.prep + recipe.cook}m`
       : "Custom dish";
 
+    // Show missing ingredients warning
+    let stockNote = "";
+    if (recipe) {
+      const missing = getMissingIngredients(recipe);
+      if (missing.length === 0) {
+        stockNote = `<div style="font-size:.72rem;color:var(--accent);margin-bottom:6px;">✅ All stocked</div>`;
+      } else {
+        stockNote = `<div style="font-size:.72rem;color:var(--primary);margin-bottom:6px;">🛒 Need: ${missing.join(", ")}</div>`;
+      }
+    }
+
     const buttons = FAMILY.map(f => {
       const hasVoted = voters.includes(f.name);
       const cls = hasVoted ? `vote-btn ${f.btnClass}` : "vote-btn";
@@ -1650,6 +1680,7 @@ function renderVote() {
     return `<div class="vote-card ${isWinner ? "winner" : ""}">
       <h3>${dish}</h3>
       <div class="vote-meta">${meta}</div>
+      ${stockNote}
       <div class="vote-bar-track"><div class="vote-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
       <div class="vote-count">${voters.length} vote${voters.length !== 1 ? "s" : ""} (${pct}%)</div>
       <div class="vote-buttons">${buttons}</div>
