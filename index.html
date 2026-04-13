@@ -1364,6 +1364,10 @@ function getPantryMatchPct(recipe) {
   return Math.round((have / recipe.ingredients.length) * 100);
 }
 
+function isFullyInStock(recipe) {
+  return recipe.ingredients.length > 0 && recipe.ingredients.every(i => pantryStock[i]);
+}
+
 function prepareRoulette() {
   loadPantry();
   const mealF = document.getElementById("rouletteMeal").value;
@@ -1377,16 +1381,25 @@ function prepareRoulette() {
     return true;
   });
 
-  // Score by pantry match — base weight 1, bonus up to 4 for pantry %
-  pool = pool.map(r => {
-    const pct = getPantryMatchPct(r);
-    const weight = 1 + (pct / 100) * 4; // 1–5 range
-    return { ...r, pct, weight };
-  });
+  // Only include recipes where all ingredients are in stock
+  let inStockPool = pool.filter(r => isFullyInStock(r));
 
-  // Sort by match descending, take top 12 for the wheel
-  pool.sort((a, b) => b.pct - a.pct || a.name.localeCompare(b.name));
-  rouletteCandidates = pool.slice(0, 12);
+  // Fallback: if nothing is fully in stock, show top matches with a notice
+  let fallback = false;
+  if (!inStockPool.length && pool.length) {
+    fallback = true;
+    inStockPool = pool.map(r => ({ ...r, pct: getPantryMatchPct(r) }))
+      .sort((a, b) => b.pct - a.pct)
+      .slice(0, 12);
+  } else {
+    inStockPool = inStockPool.map(r => ({ ...r, pct: 100 }));
+  }
+
+  // Equal weight since all are fully in stock (or weighted by pct in fallback)
+  rouletteCandidates = inStockPool.slice(0, 12).map(r => ({
+    ...r,
+    weight: fallback ? 1 + (r.pct / 100) * 4 : 1
+  }));
 
   drawWheel();
   document.getElementById("rouletteResult").innerHTML = "";
@@ -1395,7 +1408,10 @@ function prepareRoulette() {
   const cEl = document.getElementById("rouletteCandidates");
   if (rouletteCandidates.length) {
     const totalWeight = rouletteCandidates.reduce((s, c) => s + c.weight, 0);
-    cEl.innerHTML = `<h3>🎯 Top ${rouletteCandidates.length} candidates (weighted by pantry match)</h3>
+    const notice = fallback
+      ? `<p style="font-size:.82rem;color:var(--primary);margin-bottom:8px;">⚠️ No recipes are fully in stock. Showing best partial matches — check your <strong>🏪 Pantry</strong> to stock up!</p>`
+      : `<p style="font-size:.82rem;color:var(--accent);margin-bottom:8px;">✅ Only showing dishes you have <strong>all ingredients</strong> for.</p>`;
+    cEl.innerHTML = `${notice}<h3>🎯 ${rouletteCandidates.length} candidates on the wheel</h3>
       <div class="candidate-list">${rouletteCandidates.map(c => {
         const chance = Math.round((c.weight / totalWeight) * 100);
         return `<div class="candidate-chip"><span>${c.name} <span style="font-size:.7rem;color:#999">${c.pct}% in pantry</span></span><span class="pct">${chance}%</span></div>`;
@@ -1568,11 +1584,15 @@ function setVoteToday() {
 
 function ensureVoteDay(dateKey) {
   if (!voteData[dateKey]) {
-    // Pre-populate with tonight's planned dinner + 2 random dinner suggestions
+    loadPantry();
     const options = [];
+    // Include tonight's planned dinner if it exists
     if (mealPlan[dateKey]?.dinner) options.push(mealPlan[dateKey].dinner);
-    const dinnerRecipes = RECIPES.filter(r => r.meal.includes("dinner"));
-    const shuffled = dinnerRecipes.sort(() => Math.random() - 0.5);
+    // Only suggest dinners where all ingredients are in stock
+    let dinnerPool = RECIPES.filter(r => r.meal.includes("dinner") && isFullyInStock(r));
+    // Fallback: if nothing fully in stock, use all dinner recipes
+    if (!dinnerPool.length) dinnerPool = RECIPES.filter(r => r.meal.includes("dinner"));
+    const shuffled = dinnerPool.sort(() => Math.random() - 0.5);
     for (const r of shuffled) {
       if (options.length >= 4) break;
       if (!options.includes(r.name)) options.push(r.name);
