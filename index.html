@@ -271,12 +271,12 @@ section.active { display: block; }
 
   <!-- DATA BAR -->
   <div class="data-bar">
-    <button onclick="exportData()">💾 Save to File</button>
-    <button onclick="document.getElementById('importFile').click()">📂 Load from File</button>
+    <button onclick="exportAll()">💾 Save All</button>
+    <button onclick="document.getElementById('importFile').click()">📂 Load Data</button>
     <button onclick="autoFillWeek()">🎲 Auto-Fill Week</button>
     <button onclick="clearWeek()">🗑️ Clear Week</button>
     <button onclick="window.print()">🖨️ Print Week</button>
-    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)" multiple>
   </div>
 
   <!-- ════════ PLANNER TAB ════════ -->
@@ -998,41 +998,101 @@ function renderGrocery() {
 }
 
 /* ═══════════════════════════════════════════════════════
-   PERSISTENCE — localStorage + JSON export/import
+   PERSISTENCE — localStorage + JSON file export/import
+   Each data type saves to its own JSON file.
    ═══════════════════════════════════════════════════════ */
 function saveToLocalStorage() {
-  try { localStorage.setItem("familyMealPlan", JSON.stringify(mealPlan)); } catch(e) { /* quota */ }
+  try { localStorage.setItem("familyMealPlan", JSON.stringify(mealPlan)); } catch(e) {}
 }
 
 function loadFromLocalStorage() {
   try {
     const saved = localStorage.getItem("familyMealPlan");
     if (saved) mealPlan = JSON.parse(saved);
-  } catch(e) { /* corrupt */ }
+  } catch(e) {}
 }
 
-function exportData() {
-  const blob = new Blob([JSON.stringify(mealPlan, null, 2)], { type:"application/json" });
+// ── File helpers ──
+function downloadJSON(data, filename) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type:"application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `meal-plan-${formatDate(new Date())}.json`;
+  a.download = filename;
   a.click();
   URL.revokeObjectURL(a.href);
 }
 
+// ── Export all as separate files (zipped into sequential downloads) ──
+function exportAll() {
+  const ts = formatDate(new Date());
+  // Small delay between downloads so browser doesn't block them
+  downloadJSON(mealPlan, `meal-plan-${ts}.json`);
+  setTimeout(() => downloadJSON(
+    { stock: pantryStock, custom: customIngredients },
+    `pantry-${ts}.json`
+  ), 300);
+  setTimeout(() => downloadJSON(voteData, `votes-${ts}.json`), 600);
+  const customRecipes = RECIPES.filter(r => r._custom);
+  if (customRecipes.length || deletedBuiltins.length) {
+    setTimeout(() => downloadJSON(
+      { recipes: customRecipes, deleted: deletedBuiltins },
+      `custom-recipes-${ts}.json`
+    ), 900);
+  }
+}
+
+// ── Import: auto-detects file type by content/filename ──
 function importData(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      mealPlan = JSON.parse(e.target.result);
-      saveToLocalStorage();
-      renderWeek();
-      alert("Meal plan loaded successfully! 🎉");
-    } catch { alert("Invalid file format. Please select a valid JSON file."); }
-  };
-  reader.readAsText(file);
+  const files = event.target.files;
+  if (!files.length) return;
+  let loaded = 0;
+  const results = [];
+
+  for (const file of files) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        const name = file.name.toLowerCase();
+        if (name.includes("pantry")) {
+          // Pantry file: { stock: {...}, custom: [...] }
+          if (data.stock) pantryStock = data.stock;
+          if (data.custom) customIngredients = data.custom;
+          savePantry();
+          results.push("🏪 Pantry");
+        } else if (name.includes("vote")) {
+          // Votes file
+          voteData = data;
+          saveVotes();
+          results.push("🗳️ Votes");
+        } else if (name.includes("custom-recipe")) {
+          // Custom recipes file: { recipes: [...], deleted: [...] }
+          if (data.recipes) {
+            data.recipes.forEach(r => {
+              r._custom = true;
+              if (!RECIPES.find(x => x.name === r.name)) RECIPES.push(r);
+            });
+          }
+          if (data.deleted) deletedBuiltins = data.deleted;
+          saveCustomRecipes();
+          results.push("📖 Custom Recipes");
+        } else {
+          // Default: treat as meal plan (object with date keys)
+          mealPlan = data;
+          saveToLocalStorage();
+          results.push("📅 Meal Plan");
+        }
+      } catch { results.push(`❌ ${file.name} (invalid)`); }
+
+      loaded++;
+      if (loaded === files.length) {
+        renderWeek();
+        renderRecipes();
+        alert(`Loaded: ${results.join(", ")} 🎉`);
+      }
+    };
+    reader.readAsText(file);
+  }
   event.target.value = "";
 }
 
